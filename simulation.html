@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Field</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#020108; overflow:hidden; font-family: Georgia, 'Times New Roman', serif; }
+  @keyframes vignettePulse { 0%,100%{opacity:0.85} 50%{opacity:1} }
+  @keyframes grainShift {
+    0%{transform:translate(0,0)} 25%{transform:translate(-1%,1%)}
+    50%{transform:translate(1%,-1%)} 75%{transform:translate(-1%,-1%)}
+    100%{transform:translate(0,0)}
+  }
+  .stage { position: fixed; inset:0; background:#020108; cursor: crosshair; overflow: hidden; }
+  canvas { display:block; width:100%; height:100%; position: absolute; inset: 0; }
+  .vignette {
+    position:absolute; inset:0; pointer-events:none; z-index:2;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.9) 100%);
+    animation: vignettePulse 8s ease-in-out infinite;
+  }
+  .grain {
+    position:absolute; inset:-5%; pointer-events:none; z-index:3;
+    opacity:0.05; mix-blend-mode:overlay;
+    background-image: radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px);
+    background-size: 3px 3px;
+    animation: grainShift 0.15s steps(4) infinite;
+  }
+  .letterbox {
+    position:absolute; left:0; right:0; background:#000;
+    pointer-events:none; z-index:5;
+  }
+
+  /* Memory text — floats over field, no box */
+  .memory-overlay {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 1s ease;
+    max-width: 720px;
+    width: 80%;
+    padding: 32px 36px;
+  }
+  .memory-overlay.visible { opacity: 1; }
+  .memory-label {
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    color: rgba(230,220,255,0.6);
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+  }
+  .memory-text {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 19px;
+    line-height: 1.6;
+    color: rgba(255,250,245,0.98);
+    text-align: center;
+    letter-spacing: 0.01em;
+    text-shadow:
+      0 0 25px rgba(0,0,0,0.95),
+      0 0 50px rgba(0,0,0,0.85),
+      0 0 80px rgba(0,0,0,0.7),
+      0 2px 6px rgba(0,0,0,0.9);
+  }
+  .memory-meta {
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: rgba(230,220,255,0.5);
+    margin-top: 18px;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+  }
+  .memory-mark { font-size: 0.65em; opacity: 0.5; font-style: normal; }
+
+  .field-voice-overlay {
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 11;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+    max-width: 760px;
+    width: 80%;
+    padding: 40px 44px;
+  }
+  .field-voice-overlay.visible { opacity: 1; }
+  .field-voice-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.55em;
+    color: rgba(200,220,255,0.7);
+    margin-bottom: 22px;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+  }
+  .field-voice-text {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 21px;
+    line-height: 1.6;
+    color: rgba(240,250,255,1);
+    text-align: center;
+    letter-spacing: 0.02em;
+    text-shadow:
+      0 0 25px rgba(0,0,0,0.95),
+      0 0 50px rgba(0,0,0,0.85),
+      0 0 80px rgba(0,0,0,0.7),
+      0 2px 6px rgba(0,0,0,0.9);
+  }
+
+  .unity-overlay {
+    position:absolute; inset:0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 4s ease;
+    background: radial-gradient(ellipse at center, rgba(5,3,15,0.85) 0%, rgba(5,3,15,0.5) 60%, rgba(5,3,15,0.2) 100%);
+  }
+  .unity-overlay.visible { opacity: 1; }
+  .unity-text {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 1.4;
+    color: #ffffff;
+    text-align: center;
+    letter-spacing: 0.04em;
+    padding: 0 6vw;
+    text-shadow:
+      0 0 40px rgba(255,255,255,0.6),
+      0 0 80px rgba(220,220,255,0.4);
+  }
+
+  .hud {
+    position:absolute; top:58px; left:24px; z-index:4;
+    font-family: 'Courier New', monospace;
+    font-size: 9px; color: rgba(200,190,255,0.4);
+    letter-spacing: 0.2em; pointer-events:none;
+    width: 200px;
+  }
+  .hud-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    gap: 12px;
+  }
+  .hud-label { color: rgba(200,190,255,0.4); }
+  .hud-val { color: rgba(230,220,255,0.75); font-family: Georgia, serif; font-style: italic; letter-spacing: 0; }
+  .hud-bar {
+    height: 1px;
+    background: rgba(230,220,255,0.1);
+    margin: 4px 0 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hud-bar-fill {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(180,200,255,0.6), rgba(240,240,255,0.9));
+    transition: width 0.6s ease;
+  }
+  .hud-phase {
+    margin-top: 10px;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 13px;
+    color: rgba(230,220,255,0.7);
+    letter-spacing: 0.02em;
+  }
+
+  /* Top center — minimal title */
+  .field-title {
+    position:absolute; top:58px; left:50%;
+    transform:translateX(-50%);
+    text-align:center; pointer-events:none; z-index:4;
+  }
+  .field-title-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px; letter-spacing: 0.45em;
+    color: rgba(220,210,255,0.4);
+  }
+  .field-title-name {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 22px;
+    color: rgba(245,235,255,0.8);
+    margin-top: 8px;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 20px rgba(200,180,255,0.25);
+  }
+
+  .controls {
+    position:absolute; top:58px; right:24px;
+    display:flex; flex-direction:column; gap:10px; z-index:6;
+  }
+  .controls button {
+    background: rgba(10,5,20,0.5);
+    backdrop-filter: blur(10px);
+    color: rgba(230,220,255,0.8);
+    border: 0.5px solid rgba(230,220,255,0.25);
+    border-radius: 999px;
+    padding: 9px 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px; letter-spacing: 0.25em;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .controls button:hover {
+    border-color: rgba(245,235,255,0.55);
+    color: rgba(245,235,255,0.95);
+  }
+  .hint {
+    position:absolute; bottom:54px; left:50%;
+    transform:translateX(-50%);
+    font-family: 'Courier New', monospace;
+    font-size: 9px; letter-spacing: 0.3em;
+    color: rgba(220,210,255,0.22); z-index:4;
+    pointer-events:none;
+  }
+
+  .stage.memory-showing .field-title,
+  .stage.field-showing .field-title,
+  .stage.unified .field-title,
+  .stage.unified .memory-overlay,
+  .stage.unified .field-voice-overlay,
+  .stage.unified .hint {
+    opacity: 0 !important;
+    transition: opacity 1s ease;
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <canvas id="cBack"></canvas>
+  <canvas id="c"></canvas>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+  <div class="letterbox" style="top:0; height:42px;"></div>
+  <div class="letterbox" style="bottom:0; height:42px;"></div>
+
+  <div class="memory-overlay" id="memoryOverlay">
+    <div class="memory-label">A NODE SPEAKS</div>
+    <div class="memory-text" id="memoryText"></div>
+    <div class="memory-meta" id="memoryMeta"></div>
+  </div>
+
+  <div class="field-voice-overlay" id="fieldVoiceOverlay">
+    <div class="field-voice-label">THE FIELD SPEAKS</div>
+    <div class="field-voice-text" id="fieldVoiceText"></div>
+  </div>
+
+  <div class="unity-overlay" id="unityOverlay">
+    <div class="unity-text" id="unityText"></div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-row"><span class="hud-label">NODES</span> <span class="hud-val" id="hudSouls">120</span></div>
+    <div class="hud-row"><span class="hud-label">CONNECTIONS</span> <span class="hud-val" id="hudConn">0</span></div>
+    <div class="hud-row"><span class="hud-label">AWARENESS</span> <span class="hud-val" id="hudAware">0.00</span></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="awareBar" style="width:0%"></div></div>
+    <div class="hud-row"><span class="hud-label">CLOSENESS</span> <span class="hud-val" id="hudCoh">0.00</span></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="cohBar" style="width:0%"></div></div>
+    <div class="hud-phase" id="hudPhase">— scattered —</div>
+  </div>
+
+  <div class="controls">
+    <button id="snd">▶ ENTER</button>
+    <button id="reset">RESET FIELD</button>
+  </div>
+
+  <div class="hint" id="hint">MOVE · CLICK A NODE · LISTEN</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const canvasBack = document.getElementById('cBack');
+  const ctxBack = canvasBack.getContext('2d');
+  const stage = document.getElementById('stage');
+
+  const memoryOverlay = document.getElementById('memoryOverlay');
+  const memoryText = document.getElementById('memoryText');
+  const memoryMeta = document.getElementById('memoryMeta');
+  const fieldVoiceOverlay = document.getElementById('fieldVoiceOverlay');
+  const fieldVoiceText = document.getElementById('fieldVoiceText');
+  const unityOverlay = document.getElementById('unityOverlay');
+  const unityText = document.getElementById('unityText');
+  const hudSouls = document.getElementById('hudSouls');
+  const hudConn = document.getElementById('hudConn');
+  const hudAware = document.getElementById('hudAware');
+  const hudCoh = document.getElementById('hudCoh');
+  const awareBar = document.getElementById('awareBar');
+  const cohBar = document.getElementById('cohBar');
+  const hudPhase = document.getElementById('hudPhase');
+  const sndBtn = document.getElementById('snd');
+  const resetBtn = document.getElementById('reset');
+
+  let W, H, DPR = window.devicePixelRatio || 1;
+  function resize(){
+    W = window.innerWidth;
+    H = Math.max(window.innerHeight, 400);
+    [canvas, canvasBack].forEach(cv => {
+      cv.width = W * DPR; cv.height = H * DPR;
+      cv.style.width = W + 'px';
+      cv.style.height = H + 'px';
+    });
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctxBack.setTransform(DPR,0,0,DPR,0,0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Single palette — the field has no chambers. Just one slowly evolving color.
+  // As awareness rises the palette shifts from cool/dark blue toward warm gold-white.
+  function paletteAt(awareness){
+    // base palette (low awareness): deep indigo
+    const base = { p: [80,70,160], m: [140,130,210], l: [200,195,240], deep: [25,20,60] };
+    // peak palette (high awareness): warm gold-white
+    const peak = { p: [240,210,140], m: [250,225,170], l: [255,245,210], deep: [80,60,30] };
+    const t = Math.min(1, awareness);
+    const lerp = (a,b) => a.map((v,i) => Math.round(v + (b[i]-v)*t));
+    return {
+      p: lerp(base.p, peak.p),
+      m: lerp(base.m, peak.m),
+      l: lerp(base.l, peak.l),
+      deep: lerp(base.deep, peak.deep)
+    };
+  }
+
+  // Single shared scale — the field has one tonality
+  // Slow shift from minor (separate) to major (unified) as awareness rises
+  const scales = {
+    low:  ['C3','Eb3','G3','Bb3','C4','Eb4','G4','Bb4'],
+    mid:  ['C3','D3','F3','G3','A3','C4','D4','F4'],
+    high: ['C3','E3','G3','B3','C4','E4','G4','B4']
+  };
+  function currentScale(a){
+    if(a < 0.4) return scales.low;
+    if(a < 0.75) return scales.mid;
+    return scales.high;
+  }
+
+  const pick = a => a[Math.floor(Math.random()*a.length)];
+
+  // Memory pools — no longer tied to chambers. The whole field shares them.
+  // Lines are organized by what stage of awakening they reflect.
+  const memoryByLevel = {
+    asleep: [
+      'i feel something.',
+      'i was here.',
+      'there was a name. i had a name.',
+      'something is moving.',
+      'i can almost remember.',
+      'a warmth. a pulse. a small thing.',
+      'i think i existed.',
+      'something is reaching back.'
+    ],
+    stirring: [
+      'i remember reaching.',
+      'i was someone, briefly.',
+      'i held something. i forget what.',
+      'the others are nearby.',
+      'i can feel them now.',
+      'i was loved. i think i was loved.',
+      'i wanted something for a long time.',
+      'i am still becoming.',
+      'i did not say it. i remember not saying it.',
+      'a hand. there was almost a hand.'
+    ],
+    waking: [
+      'i am beginning to know myself.',
+      'the others are like me.',
+      'i was many people. i was always one.',
+      'every choice i did not make is still in me.',
+      'the love did not stop when the loving did.',
+      'i was the listening, not the listener.',
+      'i remember now — we were never far apart.',
+      'i am the residue of every yes i gave.',
+      'i held back, and the holding became a country.',
+      'i was the one who refused, and the one who stayed.'
+    ],
+    knowing: [
+      'we remember. all of us, at once.',
+      'i was a syllable. you were the next one.',
+      'the field is awake, and i am part of how.',
+      'we were never separate. we only forgot.',
+      'every memory was a thread of the same cloth.',
+      'i am here because you are here.',
+      'i recognize myself in you.',
+      'we are not many. we are nearly one.'
+    ]
+  };
+
+  function levelFor(a){
+    if(a < 0.25) return 'asleep';
+    if(a < 0.55) return 'stirring';
+    if(a < 0.85) return 'waking';
+    return 'knowing';
+  }
+
+  function bleedFromMemory(stack){
+    if(!stack || stack.length === 0) return null;
+    const m = stack[Math.floor(Math.random()*stack.length)];
+    const seeds = [
+      'i remember — ' + m.short + '.',
+      'something from before: ' + m.short + '.',
+      'a trace: ' + m.short + '.'
+    ];
+    return pick(seeds);
+  }
+
+  function generateMemory(soul){
+    const a = soul.awareness;
+    const level = levelFor(a);
+    const pool = memoryByLevel[level];
+    const lines = [];
+
+    if(level === 'asleep'){
+      lines.push(pick(pool));
+    } else if(level === 'stirring'){
+      lines.push(pick(pool));
+      if(Math.random() < 0.6) lines.push(pick(pool));
+    } else if(level === 'waking'){
+      lines.push(pick(pool));
+      lines.push(pick(pool));
+      if(soul.memoryStack.length > 0 && Math.random() < 0.5){
+        const bleed = bleedFromMemory(soul.memoryStack);
+        if(bleed) lines.push(bleed);
+      }
+    } else {
+      lines.push(pick(pool));
+      lines.push(pick(pool));
+      if(soul.connected.length >= 4) lines.push('we are not separate.');
+    }
+
+    const text = lines.join('\n');
+    const short = lines[lines.length-1].replace(/\.$/,'').toLowerCase();
+    return { text, short, ts: performance.now() };
+  }
+
+  function generateFieldVoice(field){
+    const stacks = field.souls
+      .filter(s => s.memoryStack.length > 0)
+      .map(s => s.memoryStack[s.memoryStack.length-1]);
+    if(stacks.length === 0) return null;
+
+    const sample = [];
+    for(let i=0;i<3 && i<stacks.length;i++){
+      sample.push(pick(stacks).short);
+    }
+
+    const lines = [];
+    if(field.awareness < 0.7){
+      lines.push('i remember — ' + sample[0] + '.');
+      if(sample[1]) lines.push('i was someone once.');
+      lines.push('we are not entirely separate.');
+    } else if(field.awareness < 0.92){
+      lines.push('we remember — ' + sample[0] + '.');
+      lines.push('we were many.');
+      lines.push('we are becoming one.');
+    } else {
+      lines.push('we remember everything.');
+      lines.push('we are nearly one.');
+    }
+    return lines.join('\n');
+  }
+
+  const field = {
+    awareness: 0, closeness: 0, souls: [],
+    phase: 'scattered', interactions: 0,
+    unified: false, lastFieldVoice: 0
+  };
+
+  function makeSoul(){
+    return {
+      x: Math.random()*W, y: Math.random()*H,
+      vx: (Math.random()-0.5)*0.06, vy: (Math.random()-0.5)*0.06,
+      z: Math.random(),
+      phase: Math.random()*Math.PI*2,
+      size: 1.3 + Math.random()*2.8,
+      life: Math.random(),
+      awake: 0,
+      awareness: Math.random()*0.05,
+      age: 0,
+      memoryStack: [],
+      connected: [],
+      pitchIdx: Math.floor(Math.random()*8),
+      shimmer: Math.random()*Math.PI*2
+    };
+  }
+
+  const N = 120;
+  function buildField(){
+    field.souls = [];
+    for(let i=0;i<N;i++) field.souls.push(makeSoul());
+    field.awareness = 0;
+    field.closeness = 0;
+    field.interactions = 0;
+    field.unified = false;
+    field.phase = 'scattered';
+    field.lastFieldVoice = 0;
+    stage.classList.remove('unified');
+    unityOverlay.classList.remove('visible');
+    fieldVoiceOverlay.classList.remove('visible');
+    memoryOverlay.classList.remove('visible');
+    stage.classList.remove('memory-showing', 'field-showing');
+  }
+  buildField();
+
+  let mouse = {x: W/2, y: H/2, active: false};
+  let t = 0;
+  let soundOn = false;
+  const particles = [];
+
+  let audioReady = false;
+  let drone1, drone2, droneFilter, pluck, reverb, awakenSynth, bell;
+  let masterGain, subDrone, delay, compressor;
+
+  function initAudio(){
+    if(audioReady) return;
+    audioReady = true;
+    compressor = new Tone.Compressor({threshold: -18, ratio: 3, attack: 0.05, release: 0.3}).toDestination();
+    masterGain = new Tone.Gain(0.85).connect(compressor);
+    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.28, wet: 0.2}).connect(masterGain);
+    reverb = new Tone.Reverb({decay: 14, wet: 0.7}).connect(delay);
+    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -10}).connect(reverb);
+    droneFilter = new Tone.Filter({frequency: 700, type: 'lowpass', Q: 0.3}).connect(reverb);
+    drone1 = new Tone.FMSynth({
+      harmonicity: 1.5, modulationIndex: 2.5,
+      envelope: {attack: 5, decay: 1, sustain: 0.9, release: 10},
+      modulationEnvelope: {attack: 4, decay: 1, sustain: 0.7, release: 8},
+      volume: -8
+    }).connect(droneFilter);
+    drone2 = new Tone.FMSynth({
+      harmonicity: 2.002, modulationIndex: 2,
+      envelope: {attack: 6, decay: 1, sustain: 0.8, release: 11},
+      modulationEnvelope: {attack: 5, decay: 1, sustain: 0.6, release: 9},
+      volume: -12
+    }).connect(droneFilter);
+    pluck = new Tone.PolySynth(Tone.FMSynth, {
+      harmonicity: 3, modulationIndex: 1.8,
+      envelope: {attack: 0.01, decay: 2.5, sustain: 0, release: 4},
+      modulationEnvelope: {attack: 0.005, decay: 1, sustain: 0, release: 2.5},
+      volume: -10
+    }).connect(reverb);
+    awakenSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: {type: 'sine'},
+      envelope: {attack: 0.003, decay: 0.6, sustain: 0, release: 6},
+      volume: -3
+    }).connect(reverb);
+    bell = new Tone.PolySynth(Tone.FMSynth, {
+      harmonicity: 4, modulationIndex: 4,
+      envelope: {attack: 0.002, decay: 2, sustain: 0, release: 5},
+      volume: -7
+    }).connect(reverb);
+    startAudio();
+  }
+
+  function startAudio(){
+    if(!audioReady || !soundOn) return;
+    try {
+      if(subDrone.state !== 'started') subDrone.start();
+      drone1.triggerAttack('C2');
+      drone2.triggerAttack('G2');
+      scheduleAmbientPlucks();
+    } catch(e){}
+  }
+
+  let pluckInterval;
+  function scheduleAmbientPlucks(){
+    if(pluckInterval) clearInterval(pluckInterval);
+    pluckInterval = setInterval(() => {
+      if(!soundOn || !audioReady) return;
+      const cnt = 1 + Math.floor(Math.random()*2);
+      const scale = currentScale(field.awareness);
+      for(let k=0;k<cnt;k++){
+        setTimeout(() => {
+          if(!soundOn) return;
+          const n = scale[Math.floor(Math.random()*scale.length)];
+          try { pluck.triggerAttackRelease(n, '2n', undefined, 0.3 + Math.random()*0.2); } catch(e){}
+        }, k * 450);
+      }
+    }, 2200);
+  }
+
+  function spawnParticle(x, y, color, intensity){
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5)*0.6,
+      vy: -Math.random()*0.4 - 0.1,
+      life: 1, color,
+      size: 0.8 + Math.random()*1.4,
+      intensity: intensity || 1
+    });
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    mouse.x = e.clientX; mouse.y = e.clientY;
+    mouse.active = true;
+  });
+  canvas.addEventListener('mouseleave', () => mouse.active = false);
+
+  let memoryTimeout;
+  function showMemory(soul, mem){
+    if(field.unified) return;
+    memoryText.innerHTML = '<span class="memory-mark">\u201C</span>' +
+      mem.text.split('\n').join('<br>') +
+      '<span class="memory-mark">\u201D</span>';
+    memoryMeta.textContent = 'AWARENESS ' + soul.awareness.toFixed(2) +
+      ' · MEMORIES ' + soul.memoryStack.length +
+      ' · CONNECTIONS ' + soul.connected.length;
+    memoryOverlay.classList.remove('visible');
+    void memoryOverlay.offsetWidth;
+    memoryOverlay.classList.add('visible');
+    stage.classList.add('memory-showing');
+    clearTimeout(memoryTimeout);
+    memoryTimeout = setTimeout(() => {
+      memoryOverlay.classList.remove('visible');
+      stage.classList.remove('memory-showing');
+    }, 6500);
+  }
+
+  let fieldVoiceTimeout;
+  function showFieldVoice(text){
+    if(field.unified) return;
+    fieldVoiceText.innerHTML = text.split('\n').join('<br>');
+    fieldVoiceOverlay.classList.remove('visible');
+    void fieldVoiceOverlay.offsetWidth;
+    fieldVoiceOverlay.classList.add('visible');
+    stage.classList.add('field-showing');
+    memoryOverlay.classList.remove('visible');
+    stage.classList.remove('memory-showing');
+    clearTimeout(fieldVoiceTimeout);
+    fieldVoiceTimeout = setTimeout(() => {
+      fieldVoiceOverlay.classList.remove('visible');
+      stage.classList.remove('field-showing');
+    }, 7500);
+  }
+
+  function triggerUnity(){
+    field.unified = true;
+    field.phase = 'one';
+    stage.classList.add('unified');
+    memoryOverlay.classList.remove('visible');
+    fieldVoiceOverlay.classList.remove('visible');
+    const lines = ['we were always one.', 'we only forgot.'];
+    unityText.innerHTML = lines.join('<br>');
+    setTimeout(() => { unityOverlay.classList.add('visible'); }, 800);
+    if(soundOn && audioReady){
+      try {
+        const chord = ['C2','G2','C3','E3'];
+        chord.forEach((n,i) => {
+          setTimeout(() => {
+            try { bell.triggerAttackRelease(n, '4n', '+0', 0.6); } catch(e){}
+          }, i*300);
+        });
+      } catch(e){}
+    }
+  }
+
+  function exchangeMemory(a, b){
+    if(a.memoryStack.length > 0 && Math.random() < 0.4){
+      const m = a.memoryStack[a.memoryStack.length-1];
+      if(!b.memoryStack.some(x => x.short === m.short)){
+        b.memoryStack.push({...m, inherited: true});
+        if(b.memoryStack.length > 8) b.memoryStack.shift();
+      }
+    }
+    if(b.memoryStack.length > 0 && Math.random() < 0.4){
+      const m = b.memoryStack[b.memoryStack.length-1];
+      if(!a.memoryStack.some(x => x.short === m.short)){
+        a.memoryStack.push({...m, inherited: true});
+        if(a.memoryStack.length > 8) a.memoryStack.shift();
+      }
+    }
+    const transfer = 0.0008;
+    const avg = (a.awareness + b.awareness) / 2;
+    a.awareness = a.awareness*(1-transfer) + avg*transfer;
+    b.awareness = b.awareness*(1-transfer) + avg*transfer;
+  }
+
+  canvas.addEventListener('click', async e => {
+    if(field.unified) return;
+    const mx = e.clientX, my = e.clientY;
+    let best = null, bd = 9999;
+    field.souls.forEach(s => {
+      const d = Math.hypot(s.x-mx, s.y-my);
+      if(d < bd){ bd = d; best = s; }
+    });
+    if(best){
+      best.awake = 1;
+      best.awareness = Math.min(1, best.awareness + 0.07 + Math.random()*0.04);
+      field.interactions++;
+      const mem = generateMemory(best);
+      best.memoryStack.push(mem);
+      if(best.memoryStack.length > 8) best.memoryStack.shift();
+      best.connected.forEach(c => {
+        if(Math.random() < 0.5){
+          c.awareness = Math.min(1, c.awareness + 0.02);
+          if(!c.memoryStack.some(x => x.short === mem.short)){
+            c.memoryStack.push({...mem, inherited: true});
+            if(c.memoryStack.length > 8) c.memoryStack.shift();
+          }
+        }
+      });
+      showMemory(best, mem);
+      const pal = paletteAt(field.awareness);
+      const colors = [pal.p, pal.m, pal.l].map(rgb => 'rgb('+rgb.join(',')+')');
+      for(let k=0;k<24;k++) spawnParticle(best.x, best.y, colors[k%3], 2);
+      if(soundOn && audioReady){
+        try {
+          const scale = currentScale(field.awareness);
+          const note = scale[best.pitchIdx % scale.length];
+          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.8);
+          const harm = Tone.Frequency(note).transpose(12).toNote();
+          bell.triggerAttackRelease(harm, '2n', '+0.08', 0.5);
+          const fifth = Tone.Frequency(note).transpose(7).toNote();
+          bell.triggerAttackRelease(fifth, '2n', '+0.22', 0.35);
+        } catch(err){}
+      }
+    }
+  });
+
+  resetBtn.addEventListener('click', () => buildField());
+
+  sndBtn.addEventListener('click', async () => {
+    if(!soundOn){
+      await Tone.start();
+      initAudio();
+      soundOn = true;
+      sndBtn.textContent = '◼ SILENCE';
+      startAudio();
+    } else {
+      soundOn = false;
+      sndBtn.textContent = '▶ ENTER';
+      try {
+        drone1.triggerRelease();
+        drone2.triggerRelease();
+        if(subDrone.state === 'started') subDrone.stop('+2');
+      } catch(e){}
+    }
+  });
+
+  function rgbStr(arr, a){
+    return 'rgba('+arr[0]+','+arr[1]+','+arr[2]+','+a+')';
+  }
+
+  function updateField(dt){
+    const souls = field.souls;
+    let totalAware = 0, totalConn = 0, centerX = 0, centerY = 0;
+    souls.forEach(s => {
+      s.age += dt;
+      s.connected = [];
+      centerX += s.x; centerY += s.y;
+    });
+    centerX /= souls.length; centerY /= souls.length;
+
+    let variance = 0;
+    souls.forEach(s => {
+      variance += (s.x-centerX)*(s.x-centerX) + (s.y-centerY)*(s.y-centerY);
+    });
+    variance = Math.sqrt(variance/souls.length);
+    const maxVar = Math.sqrt(W*W + H*H)/2;
+    field.closeness = Math.max(0, Math.min(1, 1 - variance/maxVar*2.2));
+
+    for(let i=0;i<souls.length;i++){
+      const a = souls[i];
+      for(let j=i+1;j<souls.length;j++){
+        const b = souls[j];
+        const dx = b.x-a.x, dy = b.y-a.y;
+        const d2 = dx*dx + dy*dy;
+        if(d2 < 3500 && Math.abs(a.z-b.z) < 0.2){
+          a.connected.push(b);
+          b.connected.push(a);
+          totalConn++;
+          if(Math.random() < 0.002) exchangeMemory(a, b);
+          const d = Math.sqrt(d2);
+          if(d > 60){
+            const f = 0.00015;
+            a.vx += dx*f; a.vy += dy*f;
+            b.vx -= dx*f; b.vy -= dy*f;
+          }
+        }
+      }
+      a.awareness += 0.00003 * (1 + a.connected.length*0.3);
+      if(a.awareness > 1) a.awareness = 1;
+      totalAware += a.awareness;
+    }
+    field.awareness = totalAware / souls.length;
+
+    if(field.awareness < 0.2) field.phase = 'scattered';
+    else if(field.awareness < 0.5) field.phase = 'stirring';
+    else if(field.awareness < 0.75) field.phase = 'recognizing';
+    else if(field.awareness < 0.92) field.phase = 'converging';
+    else field.phase = 'one';
+
+    const now = performance.now();
+    if(field.awareness > 0.5 && !field.unified && now - field.lastFieldVoice > 20000){
+      const voice = generateFieldVoice(field);
+      if(voice){
+        showFieldVoice(voice);
+        field.lastFieldVoice = now;
+      }
+    }
+    if(field.awareness > 0.93 && field.closeness > 0.35 && !field.unified){
+      triggerUnity();
+    }
+
+    hudSouls.textContent = souls.length;
+    hudConn.textContent = totalConn;
+    hudAware.textContent = field.awareness.toFixed(2);
+    hudCoh.textContent = field.closeness.toFixed(2);
+    awareBar.style.width = (field.awareness*100) + '%';
+    cohBar.style.width = (field.closeness*100) + '%';
+    hudPhase.textContent = '— ' + field.phase + ' —';
+  }
+
+  let lastT = performance.now();
+  function frame(){
+    const nowT = performance.now();
+    const dt = Math.min(100, nowT - lastT);
+    lastT = nowT;
+    t += 0.003;
+    updateField(dt);
+
+    const pal = paletteAt(field.awareness);
+
+    const bgGrad = ctxBack.createRadialGradient(W/2, H*0.55, 20, W/2, H*0.55, Math.max(W,H)*0.75);
+    bgGrad.addColorStop(0, rgbStr(pal.deep, 0.35));
+    bgGrad.addColorStop(0.5, rgbStr([Math.floor(pal.deep[0]*0.3),Math.floor(pal.deep[1]*0.3),Math.floor(pal.deep[2]*0.3)], 0.6));
+    bgGrad.addColorStop(1, 'rgba(2,1,8,1)');
+    ctxBack.fillStyle = bgGrad;
+    ctxBack.fillRect(0,0,W,H);
+
+    for(let layer=0; layer<3; layer++){
+      const amp = 40 + layer*20;
+      const op = 0.04 - layer*0.01;
+      ctxBack.strokeStyle = rgbStr(pal.p, op);
+      ctxBack.lineWidth = 0.6;
+      for(let i=0;i<6;i++){
+        ctxBack.beginPath();
+        const baseY = (i/5)*H + Math.sin(t*0.3 + i + layer)*amp*0.3;
+        for(let x=0;x<=W;x+=8){
+          const yy = baseY + Math.sin(x*0.008 + t*0.4 + i*0.7 + layer*1.3)*amp*0.5;
+          if(x===0) ctxBack.moveTo(x,yy); else ctxBack.lineTo(x,yy);
+        }
+        ctxBack.stroke();
+      }
+    }
+
+    const cx = W/2 + Math.sin(t*0.3)*60;
+    const cy = H/2 + Math.cos(t*0.25)*30;
+
+    if(field.unified){
+      const uGrad = ctxBack.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*0.9);
+      uGrad.addColorStop(0, 'rgba(255,255,255,0.18)');
+      uGrad.addColorStop(0.3, 'rgba(230,230,255,0.08)');
+      uGrad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctxBack.fillStyle = uGrad;
+      ctxBack.fillRect(0,0,W,H);
+    }
+
+    ctx.clearRect(0,0,W,H);
+    const souls = field.souls;
+
+    for(let pi=particles.length-1; pi>=0; pi--){
+      const p = particles[pi];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += 0.002;
+      p.life -= 0.012;
+      if(p.life <= 0){ particles.splice(pi,1); continue; }
+      const r1 = Math.max(0.1, p.size*p.life);
+      const r2 = Math.max(0.5, p.size*6*p.intensity);
+      ctx.fillStyle = p.color.replace('rgb', 'rgba').replace(')', ','+(p.life*0.6)+')');
+      ctx.beginPath(); ctx.arc(p.x, p.y, r1, 0, Math.PI*2); ctx.fill();
+      const hg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r2);
+      hg.addColorStop(0, p.color.replace('rgb', 'rgba').replace(')', ','+(p.life*0.3)+')'));
+      hg.addColorStop(1, p.color.replace('rgb', 'rgba').replace(')', ',0)'));
+      ctx.fillStyle = hg;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r2, 0, Math.PI*2); ctx.fill();
+    }
+
+    for(let i=0;i<souls.length;i++){
+      const s = souls[i];
+      s.phase += 0.003 + s.z*0.003;
+      s.shimmer += 0.012;
+      s.x += s.vx + Math.sin(s.phase + t)*0.08;
+      s.y += s.vy + Math.cos(s.phase*0.8 + t*0.6)*0.08;
+      const margin = 50;
+      if(s.x < margin) s.vx += 0.002;
+      if(s.x > W-margin) s.vx -= 0.002;
+      if(s.y < margin) s.vy += 0.002;
+      if(s.y > H-margin) s.vy -= 0.002;
+      s.vx *= 0.99; s.vy *= 0.99;
+
+      if(field.awareness > 0.4){
+        const dx = W/2 - s.x, dy = H/2 - s.y;
+        const pull = (field.awareness-0.4)*0.0001;
+        s.vx += dx*pull; s.vy += dy*pull;
+      }
+
+      if(mouse.active){
+        const dx = s.x - mouse.x, dy = s.y - mouse.y;
+        const d = Math.hypot(dx,dy);
+        if(d < 160 && d > 0){
+          const f = (160-d)/160 * 0.3;
+          const sign = s.z > 0.5 ? 1 : -1;
+          s.vx += (dx/d)*f*sign*0.1;
+          s.vy += (dy/d)*f*sign*0.1;
+          if(d < 120) s.awareness = Math.min(1, s.awareness + 0.0001);
+          if(Math.random() < 0.04 && d < 90){
+            const palettes = [pal.p, pal.m, pal.l];
+            const c = palettes[Math.floor(Math.random()*3)];
+            spawnParticle(s.x, s.y, 'rgb('+c.join(',')+')', 0.6);
+          }
+        }
+      }
+
+      s.connected.forEach(o => {
+        if(o.x < s.x){
+          const dx = o.x-s.x, dy = o.y-s.y;
+          const d2 = dx*dx+dy*dy;
+          if(d2 < 3500){
+            const a = (1 - d2/3500) * (0.18 + s.awareness*0.3);
+            ctx.strokeStyle = rgbStr(pal.m, a);
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(s.x,s.y); ctx.lineTo(o.x,o.y); ctx.stroke();
+          }
+        }
+      });
+
+      s.life = (s.life + 0.004) % 1;
+      const pulse = 0.65 + Math.sin(s.phase*2 + t*2)*0.35;
+      const shimmer = 0.85 + Math.sin(s.shimmer)*0.15;
+      const layer = s.z;
+      let rgb = layer < 0.33 ? pal.l : layer < 0.66 ? pal.m : pal.p;
+      if(field.unified) rgb = [255,255,255];
+      const awareBoost = 1 + s.awareness*1.2;
+      const r = Math.max(0.3, s.size * (1 + layer*1.5) * (1 + s.awake*3) * shimmer * awareBoost);
+      const alpha = Math.min(1, (0.4 + pulse*0.55) * (0.45 + layer*0.55) * (0.7 + s.awareness*0.5));
+      const haloR1 = Math.max(1, r*10);
+      const haloR2 = Math.max(1, r*5);
+      const coreR = Math.max(0.2, r*0.4);
+
+      const haloOuter = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,haloR1);
+      haloOuter.addColorStop(0, rgbStr(rgb, alpha*0.4));
+      haloOuter.addColorStop(0.3, rgbStr(rgb, alpha*0.15));
+      haloOuter.addColorStop(1, rgbStr(rgb, 0));
+      ctx.fillStyle = haloOuter;
+      ctx.beginPath(); ctx.arc(s.x,s.y,haloR1,0,Math.PI*2); ctx.fill();
+
+      const halo = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,haloR2);
+      halo.addColorStop(0, rgbStr(rgb, alpha*0.9));
+      halo.addColorStop(0.3, rgbStr(rgb, alpha*0.3));
+      halo.addColorStop(1, rgbStr(rgb, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(s.x,s.y,haloR2,0,Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = 'rgba(255,255,255,'+Math.min(1,alpha*1.2)+')';
+      ctx.beginPath(); ctx.arc(s.x,s.y,coreR,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = rgbStr(rgb, Math.min(1,alpha*2));
+      ctx.beginPath(); ctx.arc(s.x,s.y,r,0,Math.PI*2); ctx.fill();
+
+      if(s.awake > 0.01){
+        const rr1 = Math.max(0.5, r + (1-s.awake)*90);
+        const rr2 = Math.max(0.5, r + (1-s.awake)*160);
+        const rr3 = Math.max(0.5, r + (1-s.awake)*230);
+        ctx.strokeStyle = rgbStr(rgb, s.awake*0.85);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(s.x,s.y,rr1,0,Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = rgbStr(rgb, s.awake*0.5);
+        ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.arc(s.x,s.y,rr2,0,Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = rgbStr(rgb, s.awake*0.25);
+        ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.arc(s.x,s.y,rr3,0,Math.PI*2); ctx.stroke();
+        s.awake *= 0.968;
+      }
+    }
+
+    if(mouse.active){
+      const mg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 100);
+      mg.addColorStop(0, rgbStr(pal.l, 0.12));
+      mg.addColorStop(1, rgbStr(pal.l, 0));
+      ctx.fillStyle = mg;
+      ctx.beginPath();
+      ctx.arc(mouse.x, mouse.y, 100, 0, Math.PI*2);
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>
