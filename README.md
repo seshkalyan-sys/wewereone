@@ -1,5 +1,5 @@
 # wewereone
-### - An honest experiment in how language and state and timing combine to produce feeling
+### An honest experiment in how language and state and timing combine to produce feeling
 
 ---
 
@@ -97,7 +97,7 @@ The line was always going to be the line. The system was always going to converg
 |---|---|
 | Move cursor through field | Slowly raises awareness of nearby nodes |
 | Click a node | Wakes it, generates a memory, ripples to its neighbors |
-| ▶ ENTER | Begins ambient sound (drone in C, slowly shifting) |
+| ENTER | Begins ambient sound (drone in C, slowly shifting) |
 | RESET FIELD | Rebuilds the network from scratch |
 
 If you do nothing, the system still evolves — slowly. If you interact actively, you can reach unity in 5–10 minutes.
