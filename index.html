@@ -315,7 +315,11 @@
 
   let started = false;
 
-  let W, H, DPR = window.devicePixelRatio || 1;
+  let W, H;
+  // Mobile devices: cap DPR to relieve CPU pressure on the audio thread.
+  // A DPR of 3 (iPhone retina) means 9x the pixel work per frame vs DPR=1.
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || 'ontouchstart' in window;
+  let DPR = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
   function resize(){
     W = window.innerWidth;
     H = Math.max(window.innerHeight, 400);
@@ -546,20 +550,22 @@
   function initAudio(){
     if(audioReady) return;
     audioReady = true;
-    const limiter = new Tone.Limiter(-3).toDestination();
-    compressor = new Tone.Compressor({threshold: -24, ratio: 4, attack: 0.02, release: 0.25}).connect(limiter);
-    masterGain = new Tone.Gain(0.4).connect(compressor);
-    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.18, wet: 0.12}).connect(masterGain);
-    reverb = new Tone.Reverb({decay: 10, wet: 0.38}).connect(delay);
+    const limiter = new Tone.Limiter(-1).toDestination();
+    compressor = new Tone.Compressor({threshold: -20, ratio: 2.5, attack: 0.15, release: 0.4}).connect(limiter);
+    masterGain = new Tone.Gain(0.72).connect(compressor);
+    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.22, wet: 0.16}).connect(masterGain);
+    // Freeverb: algorithmic reverb, ~20x cheaper than convolution-based Tone.Reverb.
+    // Convolution reverb is the #1 cause of audio underruns on mobile browsers.
+    reverb = new Tone.Freeverb({roomSize: 0.88, dampening: 2200, wet: 0.55}).connect(delay);
 
-    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -14}).connect(reverb);
+    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -9}).connect(reverb);
     droneFilter = new Tone.Filter({frequency: 800, type: 'lowpass', Q: 0.3}).connect(reverb);
 
     drone1 = new Tone.FMSynth({
       harmonicity: 1.5, modulationIndex: 2.5,
       envelope: {attack: 5, decay: 1, sustain: 0.9, release: 10},
       modulationEnvelope: {attack: 4, decay: 1, sustain: 0.7, release: 8},
-      volume: -11
+      volume: -7
     }).connect(droneFilter);
 
     drone2 = new Tone.FMSynth({
@@ -582,21 +588,21 @@
       harmonicity: 3, modulationIndex: 1.8,
       envelope: {attack: 0.01, decay: 2.2, sustain: 0, release: 2.5},
       modulationEnvelope: {attack: 0.005, decay: 0.8, sustain: 0, release: 1.8},
-      volume: -12
+      volume: -9
     }).connect(reverb);
 
     awakenSynth = new Tone.PolySynth(Tone.Synth, {
       maxPolyphony: 12,
       oscillator: {type: 'sine'},
       envelope: {attack: 0.003, decay: 0.6, sustain: 0, release: 4},
-      volume: -12
+      volume: -2
     }).connect(reverb);
 
     bell = new Tone.PolySynth(Tone.FMSynth, {
       maxPolyphony: 16,
       harmonicity: 4, modulationIndex: 4,
       envelope: {attack: 0.002, decay: 1.6, sustain: 0, release: 3},
-      volume: -12
+      volume: -6
     }).connect(reverb);
 
     // Soft chime for bond formations — very quiet, sparse
@@ -736,7 +742,7 @@
         const chord = ['C2','G2','C3','E3','G3','B3'];
         chord.forEach((n,i) => {
           setTimeout(() => {
-            try { bell.triggerAttackRelease(n, '4n', '+0', 0.38); } catch(e){}
+            try { bell.triggerAttackRelease(n, '4n', '+0', 0.55); } catch(e){}
           }, i*280);
         });
       } catch(e){}
@@ -798,11 +804,11 @@
         try {
           const scale = currentScale(field.awareness);
           const note = scale[best.pitchIdx % scale.length];
-          awakenSynth.triggerAttackRelease(note, '2n', undefined, 0.45);
+          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.7);
           const harm = Tone.Frequency(note).transpose(12).toNote();
-          bell.triggerAttackRelease(harm, '2n', '+0.12', 0.28);
+          bell.triggerAttackRelease(harm, '2n', '+0.12', 0.42);
           const fifth = Tone.Frequency(note).transpose(7).toNote();
-          bell.triggerAttackRelease(fifth, '2n', '+0.3', 0.2);
+          bell.triggerAttackRelease(fifth, '2n', '+0.3', 0.3);
         } catch(err){}
       }
     }
@@ -814,6 +820,13 @@
     if(started) return;
     started = true;
     try {
+      // Configure for mobile stability: larger audio buffer prevents crackling from
+      // buffer underruns. Must be set BEFORE Tone.start().
+      Tone.context.lookAhead = 0.2;
+      if(Tone.context.rawContext && Tone.context.rawContext.audioWorklet){
+        // Modern browsers — request playback latency (larger buffer)
+        try { Tone.context.latencyHint = 'playback'; } catch(e){}
+      }
       await Tone.start();
       initAudio();
     } catch(e){}
@@ -926,16 +939,19 @@
     ctxBack.fillStyle = rgbStr(pal.p, 0.08 + field.awareness * 0.08);
     ctxBack.fillRect(0,0,W,H);
 
-    // Wave lines — more visible than before
-    for(let layer=0; layer<3; layer++){
+    // Wave lines — on mobile, render lighter to free up CPU for audio
+    const layerCount = isMobile ? 2 : 3;
+    const curveCount = isMobile ? 4 : 6;
+    const stepSize = isMobile ? 14 : 8;
+    for(let layer=0; layer<layerCount; layer++){
       const amp = 40 + layer*20;
       const op = 0.09 - layer*0.02;
       ctxBack.strokeStyle = rgbStr(pal.m, op);
       ctxBack.lineWidth = 0.7;
-      for(let i=0;i<6;i++){
+      for(let i=0;i<curveCount;i++){
         ctxBack.beginPath();
-        const baseY = (i/5)*H + Math.sin(t*0.3 + i + layer)*amp*0.3;
-        for(let x=0;x<=W;x+=8){
+        const baseY = (i/(curveCount-1))*H + Math.sin(t*0.3 + i + layer)*amp*0.3;
+        for(let x=0;x<=W;x+=stepSize){
           const yy = baseY + Math.sin(x*0.008 + t*0.4 + i*0.7 + layer*1.3)*amp*0.5;
           if(x===0) ctxBack.moveTo(x,yy); else ctxBack.lineTo(x,yy);
         }
