@@ -1,5 +1,4 @@
-# we were one
-### souls in the field
+### Souls in the field
 
 ---
 A dark space. A hundred and twenty souls drifting through it, each one a small point of light. They are trapped between lives, suspended between the dimensions of who they were and what they will become. At first, they drift alone. None of them remember being anything.
@@ -22,7 +21,7 @@ A soul begins in a kind of sleep. It does not know it once existed. It does not 
 
 ---
 
-## awakening
+## Awakening
 
 Each soul moves through stages as it remembers more of itself:
 
@@ -48,7 +47,7 @@ Each speaking carries its state with it how awake the soul has become, how many 
 
 ---
 
-## souls share
+## Souls share
 
 Souls drifting near each other form **bonds** faint threads of light between them. A bond only holds if the two souls belong to the same depth of the dimension, if their vibration matches closely enough.
 
@@ -74,7 +73,7 @@ Early on, the field still says *"I."* Later, it says *"we."* At the end, it says
 
 ---
 
-## moment of oneness
+## Moment of oneness
 
 When awakening passes 0.93 and communion passes 0.35, the threshold breaks.
 
@@ -105,7 +104,7 @@ A full awakening all the way to oneness — takes roughly five to ten minutes of
 
 ---
 
-## a note on what is really happening
+## A note on what is really happening
 
 Underneath the soul language, this is a small simulation. The souls are points in a drift field. Their "awakening" is a number that rises with time and interaction. Their "bonds" form when two of them come close in space and vibration. The field's state is tracked, the memories are composed on the fly from fragments matched to each soul's level, and the final moment is a threshold crossed.
 
