@@ -2,7 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>The Field</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>we were one — souls in the field</title>
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="we were one">
+<meta property="og:description" content="Souls drifting between dimensions, slowly remembering they were never separate.">
+<meta property="og:image" content="https://seshkalyan-sys.github.io/wewereone/og-image.png">
+<meta property="og:url" content="https://seshkalyan-sys.github.io/wewereone/">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="we were one">
+<meta name="twitter:description" content="Souls drifting between dimensions, slowly remembering they were never separate.">
+<meta name="twitter:image" content="https://seshkalyan-sys.github.io/wewereone/og-image.png">
+
+<link rel="icon" type="image/png" href="og-image.png">
+
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#020108; overflow:hidden; font-family: Georgia, 'Times New Roman', serif; }
@@ -11,6 +26,10 @@
     0%{transform:translate(0,0)} 25%{transform:translate(-1%,1%)}
     50%{transform:translate(1%,-1%)} 75%{transform:translate(-1%,-1%)}
     100%{transform:translate(0,0)}
+  }
+  @keyframes buttonGlow {
+    0%,100% { box-shadow: 0 0 20px rgba(230,220,255,0.25); }
+    50% { box-shadow: 0 0 35px rgba(230,220,255,0.45); }
   }
   .stage { position: fixed; inset:0; background:#020108; cursor: crosshair; overflow: hidden; }
   canvas { display:block; width:100%; height:100%; position: absolute; inset: 0; }
@@ -31,7 +50,85 @@
     pointer-events:none; z-index:5;
   }
 
-  /* Memory text — floats over field, no box */
+  .gate {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(ellipse at center, rgba(5,3,15,0.7) 0%, rgba(5,3,15,0.5) 60%, rgba(5,3,15,0.85) 100%);
+    transition: opacity 2.5s ease;
+  }
+  .gate.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .gate-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 56px 72px;
+    max-width: 640px;
+    border-radius: 20px;
+  }
+  .gate-mark {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.55em;
+    color: rgba(220,210,255,0.55);
+    margin-bottom: 26px;
+    text-transform: uppercase;
+  }
+  .gate-title {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(44px, 6vw, 72px);
+    color: rgba(250,245,255,0.98);
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    text-shadow: 0 0 40px rgba(180,160,220,0.4);
+    margin-bottom: 18px;
+  }
+  .gate-tag {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 17px;
+    color: rgba(220,210,255,0.75);
+    margin-bottom: 44px;
+    letter-spacing: 0.02em;
+    max-width: 500px;
+    line-height: 1.55;
+  }
+  .gate-btn {
+    background: transparent;
+    color: rgba(245,235,255,0.95);
+    border: 0.5px solid rgba(245,235,255,0.5);
+    border-radius: 999px;
+    padding: 16px 44px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.45em;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    animation: buttonGlow 3s ease-in-out infinite;
+  }
+  .gate-btn:hover {
+    background: rgba(245,235,255,0.08);
+    border-color: rgba(245,235,255,0.9);
+    letter-spacing: 0.55em;
+  }
+  .gate-hint {
+    margin-top: 34px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(200,190,255,0.35);
+    text-transform: uppercase;
+  }
+
   .memory-overlay {
     position:absolute;
     top: 50%;
@@ -158,8 +255,11 @@
     font-family: 'Courier New', monospace;
     font-size: 9px; color: rgba(200,190,255,0.4);
     letter-spacing: 0.2em; pointer-events:none;
-    width: 200px;
+    width: 210px;
+    opacity: 0;
+    transition: opacity 2s ease;
   }
+  .hud.visible { opacity: 1; }
   .hud-row {
     display: flex;
     justify-content: space-between;
@@ -190,31 +290,13 @@
     letter-spacing: 0.02em;
   }
 
-  /* Top center — minimal title */
-  .field-title {
-    position:absolute; top:58px; left:50%;
-    transform:translateX(-50%);
-    text-align:center; pointer-events:none; z-index:4;
-  }
-  .field-title-label {
-    font-family: 'Courier New', monospace;
-    font-size: 10px; letter-spacing: 0.45em;
-    color: rgba(220,210,255,0.4);
-  }
-  .field-title-name {
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-size: 22px;
-    color: rgba(245,235,255,0.8);
-    margin-top: 8px;
-    letter-spacing: 0.04em;
-    text-shadow: 0 0 20px rgba(200,180,255,0.25);
-  }
-
   .controls {
     position:absolute; top:58px; right:24px;
     display:flex; flex-direction:column; gap:10px; z-index:6;
+    opacity: 0;
+    transition: opacity 2s ease;
   }
+  .controls.visible { opacity: 1; }
   .controls button {
     background: rgba(10,5,20,0.5);
     backdrop-filter: blur(10px);
@@ -237,11 +319,13 @@
     font-size: 9px; letter-spacing: 0.3em;
     color: rgba(220,210,255,0.22); z-index:4;
     pointer-events:none;
+    opacity: 0;
+    transition: opacity 2s ease;
   }
+  .hint.visible { opacity: 1; }
 
-  .stage.memory-showing .field-title,
-  .stage.field-showing .field-title,
-  .stage.unified .field-title,
+  .stage.memory-showing .hint,
+  .stage.field-showing .hint,
   .stage.unified .memory-overlay,
   .stage.unified .field-voice-overlay,
   .stage.unified .hint {
@@ -259,8 +343,18 @@
   <div class="letterbox" style="top:0; height:42px;"></div>
   <div class="letterbox" style="bottom:0; height:42px;"></div>
 
+  <div class="gate" id="gate">
+    <div class="gate-inner">
+      <div class="gate-mark">— WE WERE ONE —</div>
+      <div class="gate-title">The weave of souls</div>
+      <div class="gate-tag">Souls drift between dimensions, slowly remembering they were never separate. move among them. touch one. listen for what it remembers.</div>
+      <button class="gate-btn" id="gateBtn">▶ ENTER</button>
+      <div class="gate-hint">move · touch a soul · listen</div>
+    </div>
+  </div>
+
   <div class="memory-overlay" id="memoryOverlay">
-    <div class="memory-label">A NODE SPEAKS</div>
+    <div class="memory-label">A SOUL REMEMBERS</div>
     <div class="memory-text" id="memoryText"></div>
     <div class="memory-meta" id="memoryMeta"></div>
   </div>
@@ -274,22 +368,21 @@
     <div class="unity-text" id="unityText"></div>
   </div>
 
-  <div class="hud">
-    <div class="hud-row"><span class="hud-label">NODES</span> <span class="hud-val" id="hudSouls">120</span></div>
-    <div class="hud-row"><span class="hud-label">CONNECTIONS</span> <span class="hud-val" id="hudConn">0</span></div>
-    <div class="hud-row"><span class="hud-label">AWARENESS</span> <span class="hud-val" id="hudAware">0.00</span></div>
+  <div class="hud" id="hud">
+    <div class="hud-row"><span class="hud-label">SOULS</span> <span class="hud-val" id="hudSouls">120</span></div>
+    <div class="hud-row"><span class="hud-label">BONDS</span> <span class="hud-val" id="hudConn">0</span></div>
+    <div class="hud-row"><span class="hud-label">AWAKENING</span> <span class="hud-val" id="hudAware">0.00</span></div>
     <div class="hud-bar"><div class="hud-bar-fill" id="awareBar" style="width:0%"></div></div>
-    <div class="hud-row"><span class="hud-label">CLOSENESS</span> <span class="hud-val" id="hudCoh">0.00</span></div>
+    <div class="hud-row"><span class="hud-label">COMMUNION</span> <span class="hud-val" id="hudCoh">0.00</span></div>
     <div class="hud-bar"><div class="hud-bar-fill" id="cohBar" style="width:0%"></div></div>
-    <div class="hud-phase" id="hudPhase">— scattered —</div>
+    <div class="hud-phase" id="hudPhase">— sleeping —</div>
   </div>
 
-  <div class="controls">
-    <button id="snd">▶ ENTER</button>
-    <button id="reset">RESET FIELD</button>
+  <div class="controls" id="controls">
+    <button id="reset">REBIRTH</button>
   </div>
 
-  <div class="hint" id="hint">MOVE · CLICK A NODE · LISTEN</div>
+  <div class="hint" id="hint">MOVE · TOUCH A SOUL · LISTEN</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
@@ -300,6 +393,12 @@
   const canvasBack = document.getElementById('cBack');
   const ctxBack = canvasBack.getContext('2d');
   const stage = document.getElementById('stage');
+
+  const gate = document.getElementById('gate');
+  const gateBtn = document.getElementById('gateBtn');
+  const hud = document.getElementById('hud');
+  const controls = document.getElementById('controls');
+  const hint = document.getElementById('hint');
 
   const memoryOverlay = document.getElementById('memoryOverlay');
   const memoryText = document.getElementById('memoryText');
@@ -315,8 +414,9 @@
   const awareBar = document.getElementById('awareBar');
   const cohBar = document.getElementById('cohBar');
   const hudPhase = document.getElementById('hudPhase');
-  const sndBtn = document.getElementById('snd');
   const resetBtn = document.getElementById('reset');
+
+  let started = false;
 
   let W, H, DPR = window.devicePixelRatio || 1;
   function resize(){
@@ -333,12 +433,8 @@
   resize();
   window.addEventListener('resize', resize);
 
-  // Single palette — the field has no chambers. Just one slowly evolving color.
-  // As awareness rises the palette shifts from cool/dark blue toward warm gold-white.
   function paletteAt(awareness){
-    // base palette (low awareness): deep indigo
     const base = { p: [80,70,160], m: [140,130,210], l: [200,195,240], deep: [25,20,60] };
-    // peak palette (high awareness): warm gold-white
     const peak = { p: [240,210,140], m: [250,225,170], l: [255,245,210], deep: [80,60,30] };
     const t = Math.min(1, awareness);
     const lerp = (a,b) => a.map((v,i) => Math.round(v + (b[i]-v)*t));
@@ -350,8 +446,6 @@
     };
   }
 
-  // Single shared scale — the field has one tonality
-  // Slow shift from minor (separate) to major (unified) as awareness rises
   const scales = {
     low:  ['C3','Eb3','G3','Bb3','C4','Eb4','G4','Bb4'],
     mid:  ['C3','D3','F3','G3','A3','C4','D4','F4'],
@@ -365,52 +459,52 @@
 
   const pick = a => a[Math.floor(Math.random()*a.length)];
 
-  // Memory pools — no longer tied to chambers. The whole field shares them.
-  // Lines are organized by what stage of awakening they reflect.
   const memoryByLevel = {
     asleep: [
       'i feel something.',
-      'i was here.',
+      'i was here. i think i was here.',
       'there was a name. i had a name.',
       'something is moving.',
-      'i can almost remember.',
-      'a warmth. a pulse. a small thing.',
-      'i think i existed.',
-      'something is reaching back.'
+      'i can almost remember living.',
+      'a warmth. a pulse. a life, small.',
+      'i think i existed once.',
+      'something is reaching back through me.',
+      'a body. there was a body.',
+      'breath. the memory of breath.'
     ],
     stirring: [
       'i remember reaching.',
-      'i was someone, briefly.',
-      'i held something. i forget what.',
-      'the others are nearby.',
-      'i can feel them now.',
+      'i was someone, briefly alive.',
+      'i held something. a hand, maybe. a life.',
+      'the other souls are nearby.',
+      'i can feel them now, the way i felt skin.',
       'i was loved. i think i was loved.',
-      'i wanted something for a long time.',
-      'i am still becoming.',
+      'i wanted something for a whole life.',
+      'i am still becoming what i was.',
       'i did not say it. i remember not saying it.',
-      'a hand. there was almost a hand.'
+      'a face. there was a face that knew mine.'
     ],
     waking: [
-      'i am beginning to know myself.',
-      'the others are like me.',
-      'i was many people. i was always one.',
-      'every choice i did not make is still in me.',
-      'the love did not stop when the loving did.',
+      'i am beginning to remember the self.',
+      'the other souls are like me.',
+      'i was many people wearing one name.',
+      'every life i did not live is still in me.',
+      'the love did not stop when the living did.',
       'i was the listening, not the listener.',
       'i remember now — we were never far apart.',
-      'i am the residue of every yes i gave.',
-      'i held back, and the holding became a country.',
+      'i am the residue of every yes i ever gave.',
+      'i held back, and the holding became my soul.',
       'i was the one who refused, and the one who stayed.'
     ],
     knowing: [
-      'we remember. all of us, at once.',
+      'we remember. all of us, at once, across lives.',
       'i was a syllable. you were the next one.',
-      'the field is awake, and i am part of how.',
+      'the field is awake. we are how it wakes.',
       'we were never separate. we only forgot.',
-      'every memory was a thread of the same cloth.',
+      'every life was a thread of the same cloth.',
       'i am here because you are here.',
-      'i recognize myself in you.',
-      'we are not many. we are nearly one.'
+      'i recognize my soul in yours.',
+      'we are not many souls. we are nearly one.'
     ]
   };
 
@@ -426,8 +520,8 @@
     const m = stack[Math.floor(Math.random()*stack.length)];
     const seeds = [
       'i remember — ' + m.short + '.',
-      'something from before: ' + m.short + '.',
-      'a trace: ' + m.short + '.'
+      'from a life before: ' + m.short + '.',
+      'a soul once knew — ' + m.short + '.'
     ];
     return pick(seeds);
   }
@@ -475,14 +569,14 @@
     const lines = [];
     if(field.awareness < 0.7){
       lines.push('i remember — ' + sample[0] + '.');
-      if(sample[1]) lines.push('i was someone once.');
-      lines.push('we are not entirely separate.');
+      if(sample[1]) lines.push('i lived. i was someone once.');
+      lines.push('we are not entirely separate souls.');
     } else if(field.awareness < 0.92){
       lines.push('we remember — ' + sample[0] + '.');
-      lines.push('we were many.');
-      lines.push('we are becoming one.');
+      lines.push('we were many lives.');
+      lines.push('we are becoming one soul.');
     } else {
-      lines.push('we remember everything.');
+      lines.push('we remember every life.');
       lines.push('we are nearly one.');
     }
     return lines.join('\n');
@@ -490,7 +584,7 @@
 
   const field = {
     awareness: 0, closeness: 0, souls: [],
-    phase: 'scattered', interactions: 0,
+    phase: 'sleeping', interactions: 0,
     unified: false, lastFieldVoice: 0
   };
 
@@ -520,7 +614,7 @@
     field.closeness = 0;
     field.interactions = 0;
     field.unified = false;
-    field.phase = 'scattered';
+    field.phase = 'sleeping';
     field.lastFieldVoice = 0;
     stage.classList.remove('unified');
     unityOverlay.classList.remove('visible');
@@ -532,7 +626,6 @@
 
   let mouse = {x: W/2, y: H/2, active: false};
   let t = 0;
-  let soundOn = false;
   const particles = [];
 
   let audioReady = false;
@@ -580,7 +673,7 @@
   }
 
   function startAudio(){
-    if(!audioReady || !soundOn) return;
+    if(!audioReady) return;
     try {
       if(subDrone.state !== 'started') subDrone.start();
       drone1.triggerAttack('C2');
@@ -593,12 +686,11 @@
   function scheduleAmbientPlucks(){
     if(pluckInterval) clearInterval(pluckInterval);
     pluckInterval = setInterval(() => {
-      if(!soundOn || !audioReady) return;
+      if(!audioReady || !started) return;
       const cnt = 1 + Math.floor(Math.random()*2);
       const scale = currentScale(field.awareness);
       for(let k=0;k<cnt;k++){
         setTimeout(() => {
-          if(!soundOn) return;
           const n = scale[Math.floor(Math.random()*scale.length)];
           try { pluck.triggerAttackRelease(n, '2n', undefined, 0.3 + Math.random()*0.2); } catch(e){}
         }, k * 450);
@@ -618,6 +710,7 @@
   }
 
   canvas.addEventListener('mousemove', e => {
+    if(!started) return;
     mouse.x = e.clientX; mouse.y = e.clientY;
     mouse.active = true;
   });
@@ -629,9 +722,9 @@
     memoryText.innerHTML = '<span class="memory-mark">\u201C</span>' +
       mem.text.split('\n').join('<br>') +
       '<span class="memory-mark">\u201D</span>';
-    memoryMeta.textContent = 'AWARENESS ' + soul.awareness.toFixed(2) +
+    memoryMeta.textContent = 'AWAKENING ' + soul.awareness.toFixed(2) +
       ' · MEMORIES ' + soul.memoryStack.length +
-      ' · CONNECTIONS ' + soul.connected.length;
+      ' · BONDS ' + soul.connected.length;
     memoryOverlay.classList.remove('visible');
     void memoryOverlay.offsetWidth;
     memoryOverlay.classList.add('visible');
@@ -662,14 +755,14 @@
 
   function triggerUnity(){
     field.unified = true;
-    field.phase = 'one';
+    field.phase = 'one soul';
     stage.classList.add('unified');
     memoryOverlay.classList.remove('visible');
     fieldVoiceOverlay.classList.remove('visible');
     const lines = ['we were always one.', 'we only forgot.'];
     unityText.innerHTML = lines.join('<br>');
     setTimeout(() => { unityOverlay.classList.add('visible'); }, 800);
-    if(soundOn && audioReady){
+    if(audioReady){
       try {
         const chord = ['C2','G2','C3','E3'];
         chord.forEach((n,i) => {
@@ -703,7 +796,7 @@
   }
 
   canvas.addEventListener('click', async e => {
-    if(field.unified) return;
+    if(!started || field.unified) return;
     const mx = e.clientX, my = e.clientY;
     let best = null, bd = 9999;
     field.souls.forEach(s => {
@@ -730,7 +823,7 @@
       const pal = paletteAt(field.awareness);
       const colors = [pal.p, pal.m, pal.l].map(rgb => 'rgb('+rgb.join(',')+')');
       for(let k=0;k<24;k++) spawnParticle(best.x, best.y, colors[k%3], 2);
-      if(soundOn && audioReady){
+      if(audioReady){
         try {
           const scale = currentScale(field.awareness);
           const note = scale[best.pitchIdx % scale.length];
@@ -746,23 +839,21 @@
 
   resetBtn.addEventListener('click', () => buildField());
 
-  sndBtn.addEventListener('click', async () => {
-    if(!soundOn){
+  async function enterField(){
+    if(started) return;
+    started = true;
+    try {
       await Tone.start();
       initAudio();
-      soundOn = true;
-      sndBtn.textContent = '◼ SILENCE';
-      startAudio();
-    } else {
-      soundOn = false;
-      sndBtn.textContent = '▶ ENTER';
-      try {
-        drone1.triggerRelease();
-        drone2.triggerRelease();
-        if(subDrone.state === 'started') subDrone.stop('+2');
-      } catch(e){}
-    }
-  });
+    } catch(e){}
+    gate.classList.add('hidden');
+    setTimeout(() => {
+      hud.classList.add('visible');
+      controls.classList.add('visible');
+      hint.classList.add('visible');
+    }, 1500);
+  }
+  gateBtn.addEventListener('click', enterField);
 
   function rgbStr(arr, a){
     return 'rgba('+arr[0]+','+arr[1]+','+arr[2]+','+a+')';
@@ -805,20 +896,22 @@
           }
         }
       }
-      a.awareness += 0.00003 * (1 + a.connected.length*0.3);
-      if(a.awareness > 1) a.awareness = 1;
+      if(started){
+        a.awareness += 0.00003 * (1 + a.connected.length*0.3);
+        if(a.awareness > 1) a.awareness = 1;
+      }
       totalAware += a.awareness;
     }
     field.awareness = totalAware / souls.length;
 
-    if(field.awareness < 0.2) field.phase = 'scattered';
+    if(field.awareness < 0.2) field.phase = 'sleeping';
     else if(field.awareness < 0.5) field.phase = 'stirring';
-    else if(field.awareness < 0.75) field.phase = 'recognizing';
-    else if(field.awareness < 0.92) field.phase = 'converging';
-    else field.phase = 'one';
+    else if(field.awareness < 0.75) field.phase = 'remembering';
+    else if(field.awareness < 0.92) field.phase = 'communing';
+    else field.phase = 'one soul';
 
     const now = performance.now();
-    if(field.awareness > 0.5 && !field.unified && now - field.lastFieldVoice > 20000){
+    if(started && field.awareness > 0.5 && !field.unified && now - field.lastFieldVoice > 20000){
       const voice = generateFieldVoice(field);
       if(voice){
         showFieldVoice(voice);
@@ -922,7 +1015,7 @@
         s.vx += dx*pull; s.vy += dy*pull;
       }
 
-      if(mouse.active){
+      if(started && mouse.active){
         const dx = s.x - mouse.x, dy = s.y - mouse.y;
         const d = Math.hypot(dx,dy);
         if(d < 160 && d > 0){
@@ -1002,7 +1095,7 @@
       }
     }
 
-    if(mouse.active){
+    if(started && mouse.active){
       const mg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 100);
       mg.addColorStop(0, rgbStr(pal.l, 0.12));
       mg.addColorStop(1, rgbStr(pal.l, 0));
