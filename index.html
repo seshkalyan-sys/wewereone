@@ -546,10 +546,11 @@
   function initAudio(){
     if(audioReady) return;
     audioReady = true;
-    compressor = new Tone.Compressor({threshold: -16, ratio: 3, attack: 0.05, release: 0.3}).toDestination();
-    masterGain = new Tone.Gain(0.92).connect(compressor);
-    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.32, wet: 0.22}).connect(masterGain);
-    reverb = new Tone.Reverb({decay: 16, wet: 0.72}).connect(delay);
+    const limiter = new Tone.Limiter(-1).toDestination();
+    compressor = new Tone.Compressor({threshold: -20, ratio: 2.5, attack: 0.15, release: 0.4}).connect(limiter);
+    masterGain = new Tone.Gain(0.72).connect(compressor);
+    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.22, wet: 0.16}).connect(masterGain);
+    reverb = new Tone.Reverb({decay: 14, wet: 0.55}).connect(delay);
 
     subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -9}).connect(reverb);
     droneFilter = new Tone.Filter({frequency: 800, type: 'lowpass', Q: 0.3}).connect(reverb);
@@ -763,6 +764,7 @@
     b.awareness = b.awareness*(1-transfer) + avg*transfer;
   }
 
+  let lastSoundTrigger = 0;
   canvas.addEventListener('click', async e => {
     if(!started || field.unified) return;
     const mx = e.clientX, my = e.clientY;
@@ -791,15 +793,16 @@
       const pal = paletteAt(field.awareness);
       const colors = [pal.p, pal.m, pal.l].map(rgb => 'rgb('+rgb.join(',')+')');
       for(let k=0;k<24;k++) spawnParticle(best.x, best.y, colors[k%3], 2);
-      if(audioReady){
+      if(audioReady && performance.now() - lastSoundTrigger > 160){
+        lastSoundTrigger = performance.now();
         try {
           const scale = currentScale(field.awareness);
           const note = scale[best.pitchIdx % scale.length];
-          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.85);
+          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.7);
           const harm = Tone.Frequency(note).transpose(12).toNote();
-          bell.triggerAttackRelease(harm, '2n', '+0.08', 0.55);
+          bell.triggerAttackRelease(harm, '2n', '+0.12', 0.42);
           const fifth = Tone.Frequency(note).transpose(7).toNote();
-          bell.triggerAttackRelease(fifth, '2n', '+0.22', 0.4);
+          bell.triggerAttackRelease(fifth, '2n', '+0.3', 0.3);
         } catch(err){}
       }
     }
