@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>we were one — souls in the field</title>
+<title>we were one — The weave of souls</title>
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="we were one">
-<meta property="og:description" content="Souls drifting between dimensions, slowly remembering they were never separate.">
+<meta property="og:title" content="The weave of souls">
+<meta property="og:description" content="Souls drifting between dimensions, slowly remembering they were never separate">
 <meta property="og:image" content="https://seshkalyan-sys.github.io/wewereone/og-image.png">
 <meta property="og:url" content="https://seshkalyan-sys.github.io/wewereone/">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="we were one">
+<meta name="twitter:title" content="The weave of souls">
 <meta name="twitter:description" content="Souls drifting between dimensions, slowly remembering they were never separate.">
 <meta name="twitter:image" content="https://seshkalyan-sys.github.io/wewereone/og-image.png">
 
@@ -22,11 +22,6 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#020108; overflow:hidden; font-family: Georgia, 'Times New Roman', serif; }
   @keyframes vignettePulse { 0%,100%{opacity:0.85} 50%{opacity:1} }
-  @keyframes grainShift {
-    0%{transform:translate(0,0)} 25%{transform:translate(-1%,1%)}
-    50%{transform:translate(1%,-1%)} 75%{transform:translate(-1%,-1%)}
-    100%{transform:translate(0,0)}
-  }
   @keyframes buttonGlow {
     0%,100% { box-shadow: 0 0 20px rgba(230,220,255,0.25); }
     50% { box-shadow: 0 0 35px rgba(230,220,255,0.45); }
@@ -35,15 +30,8 @@
   canvas { display:block; width:100%; height:100%; position: absolute; inset: 0; }
   .vignette {
     position:absolute; inset:0; pointer-events:none; z-index:2;
-    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.9) 100%);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 85%, rgba(0,0,0,0.8) 100%);
     animation: vignettePulse 8s ease-in-out infinite;
-  }
-  .grain {
-    position:absolute; inset:-5%; pointer-events:none; z-index:3;
-    opacity:0.05; mix-blend-mode:overlay;
-    background-image: radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px);
-    background-size: 3px 3px;
-    animation: grainShift 0.15s steps(4) infinite;
   }
   .letterbox {
     position:absolute; left:0; right:0; background:#000;
@@ -51,68 +39,43 @@
   }
 
   .gate {
-    position: absolute;
-    inset: 0;
-    z-index: 30;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: absolute; inset: 0; z-index: 30;
+    display: flex; justify-content: center; align-items: center;
     background: radial-gradient(ellipse at center, rgba(5,3,15,0.7) 0%, rgba(5,3,15,0.5) 60%, rgba(5,3,15,0.85) 100%);
     transition: opacity 2.5s ease;
   }
-  .gate.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
+  .gate.hidden { opacity: 0; pointer-events: none; }
   .gate-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 56px 72px;
-    max-width: 640px;
-    border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 56px 72px; max-width: 640px; border-radius: 20px;
   }
   .gate-mark {
     font-family: 'Courier New', monospace;
-    font-size: 11px;
-    letter-spacing: 0.55em;
+    font-size: 11px; letter-spacing: 0.55em;
     color: rgba(220,210,255,0.55);
-    margin-bottom: 26px;
-    text-transform: uppercase;
+    margin-bottom: 26px; text-transform: uppercase;
   }
   .gate-title {
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-weight: 300;
+    font-family: Georgia, serif; font-style: italic; font-weight: 300;
     font-size: clamp(44px, 6vw, 72px);
     color: rgba(250,245,255,0.98);
-    letter-spacing: 0.02em;
-    line-height: 1.1;
+    letter-spacing: 0.02em; line-height: 1.1;
     text-shadow: 0 0 40px rgba(180,160,220,0.4);
     margin-bottom: 18px;
   }
   .gate-tag {
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-size: 17px;
-    color: rgba(220,210,255,0.75);
-    margin-bottom: 44px;
-    letter-spacing: 0.02em;
-    max-width: 500px;
-    line-height: 1.55;
+    font-family: Georgia, serif; font-style: italic;
+    font-size: 17px; color: rgba(220,210,255,0.75);
+    margin-bottom: 44px; letter-spacing: 0.02em;
+    max-width: 500px; line-height: 1.55;
   }
   .gate-btn {
-    background: transparent;
-    color: rgba(245,235,255,0.95);
+    background: transparent; color: rgba(245,235,255,0.95);
     border: 0.5px solid rgba(245,235,255,0.5);
-    border-radius: 999px;
-    padding: 16px 44px;
+    border-radius: 999px; padding: 16px 44px;
     font-family: 'Courier New', monospace;
-    font-size: 12px;
-    letter-spacing: 0.45em;
-    cursor: pointer;
-    transition: all 0.4s ease;
+    font-size: 12px; letter-spacing: 0.45em;
+    cursor: pointer; transition: all 0.4s ease;
     animation: buttonGlow 3s ease-in-out infinite;
   }
   .gate-btn:hover {
@@ -121,129 +84,87 @@
     letter-spacing: 0.55em;
   }
   .gate-hint {
-    margin-top: 34px;
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    color: rgba(200,190,255,0.35);
-    text-transform: uppercase;
+    margin-top: 34px; font-family: 'Courier New', monospace;
+    font-size: 10px; letter-spacing: 0.3em;
+    color: rgba(200,190,255,0.35); text-transform: uppercase;
   }
 
   .memory-overlay {
-    position:absolute;
-    top: 50%;
-    left: 50%;
+    position:absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: none;
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 1s ease;
-    max-width: 720px;
-    width: 80%;
-    padding: 32px 36px;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none; z-index: 10;
+    opacity: 0; transition: opacity 0.8s ease;
+    max-width: 720px; width: 80%; padding: 32px 36px;
   }
   .memory-overlay.visible { opacity: 1; }
   .memory-label {
     font-family: 'Courier New', monospace;
-    font-size: 9px;
-    letter-spacing: 0.5em;
+    font-size: 9px; letter-spacing: 0.5em;
     color: rgba(230,220,255,0.6);
-    margin-bottom: 18px;
-    text-transform: uppercase;
-    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+    margin-bottom: 18px; text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,0,0,0.95);
   }
   .memory-text {
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-weight: 300;
-    font-size: 19px;
-    line-height: 1.6;
-    color: rgba(255,250,245,0.98);
-    text-align: center;
+    font-family: Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 19px; line-height: 1.6;
+    color: rgba(255,250,245,0.98); text-align: center;
     letter-spacing: 0.01em;
     text-shadow:
-      0 0 25px rgba(0,0,0,0.95),
-      0 0 50px rgba(0,0,0,0.85),
-      0 0 80px rgba(0,0,0,0.7),
-      0 2px 6px rgba(0,0,0,0.9);
+      0 0 25px rgba(0,0,0,0.98),
+      0 0 50px rgba(0,0,0,0.9),
+      0 0 80px rgba(0,0,0,0.75),
+      0 2px 6px rgba(0,0,0,0.95);
   }
   .memory-meta {
     font-family: 'Courier New', monospace;
-    font-size: 9px;
-    letter-spacing: 0.25em;
+    font-size: 9px; letter-spacing: 0.25em;
     color: rgba(230,220,255,0.5);
-    margin-top: 18px;
-    text-transform: uppercase;
-    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+    margin-top: 18px; text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,0,0,0.95);
   }
   .memory-mark { font-size: 0.65em; opacity: 0.5; font-style: normal; }
 
   .field-voice-overlay {
-    position:absolute;
-    top: 50%;
-    left: 50%;
+    position:absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: none;
-    z-index: 11;
-    opacity: 0;
-    transition: opacity 1.5s ease;
-    max-width: 760px;
-    width: 80%;
-    padding: 40px 44px;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none; z-index: 11;
+    opacity: 0; transition: opacity 1.2s ease;
+    max-width: 760px; width: 80%; padding: 40px 44px;
   }
   .field-voice-overlay.visible { opacity: 1; }
   .field-voice-label {
     font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: 0.55em;
+    font-size: 10px; letter-spacing: 0.55em;
     color: rgba(200,220,255,0.7);
-    margin-bottom: 22px;
-    text-transform: uppercase;
-    text-shadow: 0 0 12px rgba(0,0,0,0.9);
+    margin-bottom: 22px; text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,0,0,0.95);
   }
   .field-voice-text {
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-weight: 300;
-    font-size: 21px;
-    line-height: 1.6;
-    color: rgba(240,250,255,1);
-    text-align: center;
+    font-family: Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: 21px; line-height: 1.6;
+    color: rgba(240,250,255,1); text-align: center;
     letter-spacing: 0.02em;
     text-shadow:
-      0 0 25px rgba(0,0,0,0.95),
-      0 0 50px rgba(0,0,0,0.85),
-      0 0 80px rgba(0,0,0,0.7),
-      0 2px 6px rgba(0,0,0,0.9);
+      0 0 25px rgba(0,0,0,0.98),
+      0 0 50px rgba(0,0,0,0.9),
+      0 0 80px rgba(0,0,0,0.75),
+      0 2px 6px rgba(0,0,0,0.95);
   }
 
   .unity-overlay {
     position:absolute; inset:0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
-    z-index: 20;
-    opacity: 0;
-    transition: opacity 4s ease;
+    display: flex; justify-content: center; align-items: center;
+    pointer-events: none; z-index: 20;
+    opacity: 0; transition: opacity 4s ease;
     background: radial-gradient(ellipse at center, rgba(5,3,15,0.85) 0%, rgba(5,3,15,0.5) 60%, rgba(5,3,15,0.2) 100%);
   }
   .unity-overlay.visible { opacity: 1; }
   .unity-text {
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-weight: 300;
-    font-size: clamp(28px, 4vw, 48px);
-    line-height: 1.4;
-    color: #ffffff;
-    text-align: center;
-    letter-spacing: 0.04em;
+    font-family: Georgia, serif; font-style: italic; font-weight: 300;
+    font-size: clamp(28px, 4vw, 48px); line-height: 1.4;
+    color: #ffffff; text-align: center; letter-spacing: 0.04em;
     padding: 0 6vw;
     text-shadow:
       0 0 40px rgba(255,255,255,0.6),
@@ -256,54 +177,41 @@
     font-size: 9px; color: rgba(200,190,255,0.4);
     letter-spacing: 0.2em; pointer-events:none;
     width: 210px;
-    opacity: 0;
-    transition: opacity 2s ease;
+    opacity: 0; transition: opacity 2s ease;
   }
   .hud.visible { opacity: 1; }
   .hud-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    gap: 12px;
+    display: flex; justify-content: space-between;
+    margin-bottom: 6px; gap: 12px;
   }
   .hud-label { color: rgba(200,190,255,0.4); }
   .hud-val { color: rgba(230,220,255,0.75); font-family: Georgia, serif; font-style: italic; letter-spacing: 0; }
   .hud-bar {
-    height: 1px;
-    background: rgba(230,220,255,0.1);
-    margin: 4px 0 8px;
-    position: relative;
-    overflow: hidden;
+    height: 1px; background: rgba(230,220,255,0.1);
+    margin: 4px 0 8px; position: relative; overflow: hidden;
   }
   .hud-bar-fill {
-    position: absolute;
-    top: 0; left: 0; bottom: 0;
+    position: absolute; top: 0; left: 0; bottom: 0;
     background: linear-gradient(90deg, rgba(180,200,255,0.6), rgba(240,240,255,0.9));
     transition: width 0.6s ease;
   }
   .hud-phase {
-    margin-top: 10px;
-    font-family: Georgia, serif;
-    font-style: italic;
-    font-size: 13px;
-    color: rgba(230,220,255,0.7);
+    margin-top: 10px; font-family: Georgia, serif; font-style: italic;
+    font-size: 13px; color: rgba(230,220,255,0.7);
     letter-spacing: 0.02em;
   }
 
   .controls {
     position:absolute; top:58px; right:24px;
     display:flex; flex-direction:column; gap:10px; z-index:6;
-    opacity: 0;
-    transition: opacity 2s ease;
+    opacity: 0; transition: opacity 2s ease;
   }
   .controls.visible { opacity: 1; }
   .controls button {
-    background: rgba(10,5,20,0.5);
-    backdrop-filter: blur(10px);
+    background: rgba(10,5,20,0.5); backdrop-filter: blur(10px);
     color: rgba(230,220,255,0.8);
     border: 0.5px solid rgba(230,220,255,0.25);
-    border-radius: 999px;
-    padding: 9px 20px;
+    border-radius: 999px; padding: 9px 20px;
     font-family: 'Courier New', monospace;
     font-size: 10px; letter-spacing: 0.25em;
     cursor: pointer; transition: all 0.3s;
@@ -319,19 +227,9 @@
     font-size: 9px; letter-spacing: 0.3em;
     color: rgba(220,210,255,0.22); z-index:4;
     pointer-events:none;
-    opacity: 0;
-    transition: opacity 2s ease;
+    opacity: 0; transition: opacity 2s ease;
   }
   .hint.visible { opacity: 1; }
-
-  .stage.memory-showing .hint,
-  .stage.field-showing .hint,
-  .stage.unified .memory-overlay,
-  .stage.unified .field-voice-overlay,
-  .stage.unified .hint {
-    opacity: 0 !important;
-    transition: opacity 1s ease;
-  }
 </style>
 </head>
 <body>
@@ -339,7 +237,6 @@
   <canvas id="cBack"></canvas>
   <canvas id="c"></canvas>
   <div class="vignette"></div>
-  <div class="grain"></div>
   <div class="letterbox" style="top:0; height:42px;"></div>
   <div class="letterbox" style="bottom:0; height:42px;"></div>
 
@@ -433,23 +330,41 @@
   resize();
   window.addEventListener('resize', resize);
 
+  // PALETTE — 5 color stops for real visible mood shifts
+  // deep indigo (sleep) → violet (stirring) → rose (remembering) → amber (communing) → warm gold (one)
+  const paletteStops = [
+    { t: 0.00, p: [60, 50, 140], m: [110, 100, 200], l: [190, 185, 245], deep: [15, 12, 45] },   // indigo
+    { t: 0.28, p: [130, 80, 180], m: [180, 130, 220], l: [225, 200, 245], deep: [45, 25, 75] },  // violet
+    { t: 0.55, p: [210, 100, 150], m: [235, 150, 185], l: [250, 210, 225], deep: [70, 30, 60] }, // rose
+    { t: 0.80, p: [235, 160, 80], m: [245, 195, 130], l: [252, 225, 180], deep: [80, 45, 25] },  // amber
+    { t: 1.00, p: [250, 220, 140], m: [253, 235, 180], l: [255, 248, 220], deep: [90, 70, 35] }  // gold
+  ];
+
   function paletteAt(awareness){
-    const base = { p: [80,70,160], m: [140,130,210], l: [200,195,240], deep: [25,20,60] };
-    const peak = { p: [240,210,140], m: [250,225,170], l: [255,245,210], deep: [80,60,30] };
-    const t = Math.min(1, awareness);
-    const lerp = (a,b) => a.map((v,i) => Math.round(v + (b[i]-v)*t));
+    const a = Math.max(0, Math.min(1, awareness));
+    let lo = paletteStops[0], hi = paletteStops[paletteStops.length-1];
+    for(let i = 0; i < paletteStops.length - 1; i++){
+      if(a >= paletteStops[i].t && a <= paletteStops[i+1].t){
+        lo = paletteStops[i];
+        hi = paletteStops[i+1];
+        break;
+      }
+    }
+    const range = hi.t - lo.t;
+    const f = range > 0 ? (a - lo.t) / range : 0;
+    const lerp = (aa, bb) => aa.map((v, i) => Math.round(v + (bb[i] - v) * f));
     return {
-      p: lerp(base.p, peak.p),
-      m: lerp(base.m, peak.m),
-      l: lerp(base.l, peak.l),
-      deep: lerp(base.deep, peak.deep)
+      p: lerp(lo.p, hi.p),
+      m: lerp(lo.m, hi.m),
+      l: lerp(lo.l, hi.l),
+      deep: lerp(lo.deep, hi.deep)
     };
   }
 
   const scales = {
-    low:  ['C3','Eb3','G3','Bb3','C4','Eb4','G4','Bb4'],
-    mid:  ['C3','D3','F3','G3','A3','C4','D4','F4'],
-    high: ['C3','E3','G3','B3','C4','E4','G4','B4']
+    low:  ['C3','Eb3','G3','Bb3','C4','Eb4','G4','Bb4','C5','Eb5'],
+    mid:  ['C3','D3','F3','G3','A3','C4','D4','F4','A4','C5'],
+    high: ['C3','E3','G3','B3','C4','E4','G4','B4','C5','E5']
   };
   function currentScale(a){
     if(a < 0.4) return scales.low;
@@ -531,7 +446,6 @@
     const level = levelFor(a);
     const pool = memoryByLevel[level];
     const lines = [];
-
     if(level === 'asleep'){
       lines.push(pick(pool));
     } else if(level === 'stirring'){
@@ -549,7 +463,6 @@
       lines.push(pick(pool));
       if(soul.connected.length >= 4) lines.push('we are not separate.');
     }
-
     const text = lines.join('\n');
     const short = lines[lines.length-1].replace(/\.$/,'').toLowerCase();
     return { text, short, ts: performance.now() };
@@ -560,12 +473,10 @@
       .filter(s => s.memoryStack.length > 0)
       .map(s => s.memoryStack[s.memoryStack.length-1]);
     if(stacks.length === 0) return null;
-
     const sample = [];
     for(let i=0;i<3 && i<stacks.length;i++){
       sample.push(pick(stacks).short);
     }
-
     const lines = [];
     if(field.awareness < 0.7){
       lines.push('i remember — ' + sample[0] + '.');
@@ -602,7 +513,8 @@
       memoryStack: [],
       connected: [],
       pitchIdx: Math.floor(Math.random()*8),
-      shimmer: Math.random()*Math.PI*2
+      shimmer: Math.random()*Math.PI*2,
+      lastBondChime: 0
     };
   }
 
@@ -616,11 +528,9 @@
     field.unified = false;
     field.phase = 'sleeping';
     field.lastFieldVoice = 0;
-    stage.classList.remove('unified');
     unityOverlay.classList.remove('visible');
     fieldVoiceOverlay.classList.remove('visible');
     memoryOverlay.classList.remove('visible');
-    stage.classList.remove('memory-showing', 'field-showing');
   }
   buildField();
 
@@ -628,47 +538,74 @@
   let t = 0;
   const particles = [];
 
+  // ——— AUDIO ———
   let audioReady = false;
-  let drone1, drone2, droneFilter, pluck, reverb, awakenSynth, bell;
+  let drone1, drone2, drone3, droneFilter, pluck, reverb, awakenSynth, bell, softChime;
   let masterGain, subDrone, delay, compressor;
 
   function initAudio(){
     if(audioReady) return;
     audioReady = true;
-    compressor = new Tone.Compressor({threshold: -18, ratio: 3, attack: 0.05, release: 0.3}).toDestination();
-    masterGain = new Tone.Gain(0.85).connect(compressor);
-    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.28, wet: 0.2}).connect(masterGain);
-    reverb = new Tone.Reverb({decay: 14, wet: 0.7}).connect(delay);
-    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -10}).connect(reverb);
-    droneFilter = new Tone.Filter({frequency: 700, type: 'lowpass', Q: 0.3}).connect(reverb);
+    compressor = new Tone.Compressor({threshold: -16, ratio: 3, attack: 0.05, release: 0.3}).toDestination();
+    masterGain = new Tone.Gain(0.92).connect(compressor);
+    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.32, wet: 0.22}).connect(masterGain);
+    reverb = new Tone.Reverb({decay: 16, wet: 0.72}).connect(delay);
+
+    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -9}).connect(reverb);
+    droneFilter = new Tone.Filter({frequency: 800, type: 'lowpass', Q: 0.3}).connect(reverb);
+
     drone1 = new Tone.FMSynth({
       harmonicity: 1.5, modulationIndex: 2.5,
       envelope: {attack: 5, decay: 1, sustain: 0.9, release: 10},
       modulationEnvelope: {attack: 4, decay: 1, sustain: 0.7, release: 8},
-      volume: -8
+      volume: -7
     }).connect(droneFilter);
+
     drone2 = new Tone.FMSynth({
       harmonicity: 2.002, modulationIndex: 2,
       envelope: {attack: 6, decay: 1, sustain: 0.8, release: 11},
       modulationEnvelope: {attack: 5, decay: 1, sustain: 0.6, release: 9},
-      volume: -12
+      volume: -11
     }).connect(droneFilter);
+
+    // Third voice — brings more harmonic richness
+    drone3 = new Tone.FMSynth({
+      harmonicity: 3.005, modulationIndex: 1.5,
+      envelope: {attack: 7, decay: 1, sustain: 0.7, release: 12},
+      modulationEnvelope: {attack: 6, decay: 1, sustain: 0.5, release: 10},
+      volume: -15
+    }).connect(droneFilter);
+
     pluck = new Tone.PolySynth(Tone.FMSynth, {
+      maxPolyphony: 48,
       harmonicity: 3, modulationIndex: 1.8,
-      envelope: {attack: 0.01, decay: 2.5, sustain: 0, release: 4},
-      modulationEnvelope: {attack: 0.005, decay: 1, sustain: 0, release: 2.5},
-      volume: -10
+      envelope: {attack: 0.01, decay: 2.2, sustain: 0, release: 2.5},
+      modulationEnvelope: {attack: 0.005, decay: 0.8, sustain: 0, release: 1.8},
+      volume: -9
     }).connect(reverb);
+
     awakenSynth = new Tone.PolySynth(Tone.Synth, {
+      maxPolyphony: 32,
       oscillator: {type: 'sine'},
-      envelope: {attack: 0.003, decay: 0.6, sustain: 0, release: 6},
-      volume: -3
+      envelope: {attack: 0.003, decay: 0.6, sustain: 0, release: 4},
+      volume: -2
     }).connect(reverb);
+
     bell = new Tone.PolySynth(Tone.FMSynth, {
+      maxPolyphony: 48,
       harmonicity: 4, modulationIndex: 4,
-      envelope: {attack: 0.002, decay: 2, sustain: 0, release: 5},
-      volume: -7
+      envelope: {attack: 0.002, decay: 1.6, sustain: 0, release: 3},
+      volume: -6
     }).connect(reverb);
+
+    // Soft chime for bond formations — very quiet, sparse
+    softChime = new Tone.PolySynth(Tone.Synth, {
+      maxPolyphony: 16,
+      oscillator: {type: 'triangle'},
+      envelope: {attack: 0.005, decay: 0.4, sustain: 0, release: 2},
+      volume: -18
+    }).connect(reverb);
+
     startAudio();
   }
 
@@ -678,8 +615,30 @@
       if(subDrone.state !== 'started') subDrone.start();
       drone1.triggerAttack('C2');
       drone2.triggerAttack('G2');
+      drone3.triggerAttack('C3');
       scheduleAmbientPlucks();
+      scheduleChordShifts();
     } catch(e){}
+  }
+
+  // Chord progression follows awakening — plays a soft chord every 14 seconds
+  let chordInterval;
+  function scheduleChordShifts(){
+    if(chordInterval) clearInterval(chordInterval);
+    chordInterval = setInterval(() => {
+      if(!audioReady || !started) return;
+      const a = field.awareness;
+      let chord;
+      if(a < 0.3) chord = ['C3','Eb3','G3'];          // minor
+      else if(a < 0.6) chord = ['C3','Eb3','G3','Bb3']; // minor 7
+      else if(a < 0.85) chord = ['C3','E3','G3','B3'];   // major 7
+      else chord = ['C3','E3','G3','B3','D4'];            // major 9
+      chord.forEach((n, i) => {
+        setTimeout(() => {
+          try { pluck.triggerAttackRelease(n, '2n', undefined, 0.15 + Math.random()*0.1); } catch(e){}
+        }, i * 280);
+      });
+    }, 14000);
   }
 
   let pluckInterval;
@@ -687,15 +646,16 @@
     if(pluckInterval) clearInterval(pluckInterval);
     pluckInterval = setInterval(() => {
       if(!audioReady || !started) return;
-      const cnt = 1 + Math.floor(Math.random()*2);
+      // More notes — 1 to 3 per cycle
+      const cnt = 1 + Math.floor(Math.random()*3);
       const scale = currentScale(field.awareness);
       for(let k=0;k<cnt;k++){
         setTimeout(() => {
           const n = scale[Math.floor(Math.random()*scale.length)];
-          try { pluck.triggerAttackRelease(n, '2n', undefined, 0.3 + Math.random()*0.2); } catch(e){}
-        }, k * 450);
+          try { pluck.triggerAttackRelease(n, '2n', undefined, 0.25 + Math.random()*0.25); } catch(e){}
+        }, k * 380);
       }
-    }, 2200);
+    }, 1800);
   }
 
   function spawnParticle(x, y, color, intensity){
@@ -716,59 +676,67 @@
   });
   canvas.addEventListener('mouseleave', () => mouse.active = false);
 
-  let memoryTimeout;
+  // ——— OVERLAY MANAGEMENT — strict exclusivity ———
+  let memoryTimeout, fieldVoiceTimeout;
+  let activeOverlay = null; // 'memory' | 'field' | null
+
+  function hideAllOverlays(){
+    memoryOverlay.classList.remove('visible');
+    fieldVoiceOverlay.classList.remove('visible');
+    clearTimeout(memoryTimeout);
+    clearTimeout(fieldVoiceTimeout);
+    activeOverlay = null;
+  }
+
   function showMemory(soul, mem){
     if(field.unified) return;
+    // If the field is already speaking, don't interrupt it
+    if(activeOverlay === 'field') return;
+    hideAllOverlays();
+    activeOverlay = 'memory';
     memoryText.innerHTML = '<span class="memory-mark">\u201C</span>' +
       mem.text.split('\n').join('<br>') +
       '<span class="memory-mark">\u201D</span>';
     memoryMeta.textContent = 'AWAKENING ' + soul.awareness.toFixed(2) +
       ' · MEMORIES ' + soul.memoryStack.length +
       ' · BONDS ' + soul.connected.length;
-    memoryOverlay.classList.remove('visible');
+    // Force reflow before adding visible
     void memoryOverlay.offsetWidth;
     memoryOverlay.classList.add('visible');
-    stage.classList.add('memory-showing');
-    clearTimeout(memoryTimeout);
     memoryTimeout = setTimeout(() => {
       memoryOverlay.classList.remove('visible');
-      stage.classList.remove('memory-showing');
-    }, 6500);
+      if(activeOverlay === 'memory') activeOverlay = null;
+    }, 6000);
   }
 
-  let fieldVoiceTimeout;
   function showFieldVoice(text){
     if(field.unified) return;
+    // Field voice always wins over a soul memory
+    hideAllOverlays();
+    activeOverlay = 'field';
     fieldVoiceText.innerHTML = text.split('\n').join('<br>');
-    fieldVoiceOverlay.classList.remove('visible');
     void fieldVoiceOverlay.offsetWidth;
     fieldVoiceOverlay.classList.add('visible');
-    stage.classList.add('field-showing');
-    memoryOverlay.classList.remove('visible');
-    stage.classList.remove('memory-showing');
-    clearTimeout(fieldVoiceTimeout);
     fieldVoiceTimeout = setTimeout(() => {
       fieldVoiceOverlay.classList.remove('visible');
-      stage.classList.remove('field-showing');
-    }, 7500);
+      if(activeOverlay === 'field') activeOverlay = null;
+    }, 7000);
   }
 
   function triggerUnity(){
     field.unified = true;
     field.phase = 'one soul';
-    stage.classList.add('unified');
-    memoryOverlay.classList.remove('visible');
-    fieldVoiceOverlay.classList.remove('visible');
+    hideAllOverlays();
     const lines = ['we were always one.', 'we only forgot.'];
     unityText.innerHTML = lines.join('<br>');
     setTimeout(() => { unityOverlay.classList.add('visible'); }, 800);
     if(audioReady){
       try {
-        const chord = ['C2','G2','C3','E3'];
+        const chord = ['C2','G2','C3','E3','G3','B3'];
         chord.forEach((n,i) => {
           setTimeout(() => {
-            try { bell.triggerAttackRelease(n, '4n', '+0', 0.6); } catch(e){}
-          }, i*300);
+            try { bell.triggerAttackRelease(n, '4n', '+0', 0.55); } catch(e){}
+          }, i*280);
         });
       } catch(e){}
     }
@@ -827,11 +795,11 @@
         try {
           const scale = currentScale(field.awareness);
           const note = scale[best.pitchIdx % scale.length];
-          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.8);
+          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.85);
           const harm = Tone.Frequency(note).transpose(12).toNote();
-          bell.triggerAttackRelease(harm, '2n', '+0.08', 0.5);
+          bell.triggerAttackRelease(harm, '2n', '+0.08', 0.55);
           const fifth = Tone.Frequency(note).transpose(7).toNote();
-          bell.triggerAttackRelease(fifth, '2n', '+0.22', 0.35);
+          bell.triggerAttackRelease(fifth, '2n', '+0.22', 0.4);
         } catch(err){}
       }
     }
@@ -877,6 +845,8 @@
     const maxVar = Math.sqrt(W*W + H*H)/2;
     field.closeness = Math.max(0, Math.min(1, 1 - variance/maxVar*2.2));
 
+    const now = performance.now();
+
     for(let i=0;i<souls.length;i++){
       const a = souls[i];
       for(let j=i+1;j<souls.length;j++){
@@ -910,8 +880,7 @@
     else if(field.awareness < 0.92) field.phase = 'communing';
     else field.phase = 'one soul';
 
-    const now = performance.now();
-    if(started && field.awareness > 0.5 && !field.unified && now - field.lastFieldVoice > 20000){
+    if(started && field.awareness > 0.5 && !field.unified && now - field.lastFieldVoice > 22000){
       const voice = generateFieldVoice(field);
       if(voice){
         showFieldVoice(voice);
@@ -941,18 +910,25 @@
 
     const pal = paletteAt(field.awareness);
 
-    const bgGrad = ctxBack.createRadialGradient(W/2, H*0.55, 20, W/2, H*0.55, Math.max(W,H)*0.75);
-    bgGrad.addColorStop(0, rgbStr(pal.deep, 0.35));
-    bgGrad.addColorStop(0.5, rgbStr([Math.floor(pal.deep[0]*0.3),Math.floor(pal.deep[1]*0.3),Math.floor(pal.deep[2]*0.3)], 0.6));
+    // STRONGER background gradient — the color shift must be VISIBLE
+    const bgGrad = ctxBack.createRadialGradient(W/2, H*0.55, 20, W/2, H*0.55, Math.max(W,H)*0.8);
+    bgGrad.addColorStop(0, rgbStr(pal.deep, 0.75));
+    bgGrad.addColorStop(0.4, rgbStr(pal.deep, 0.45));
+    bgGrad.addColorStop(0.8, 'rgba(5,3,15,0.95)');
     bgGrad.addColorStop(1, 'rgba(2,1,8,1)');
     ctxBack.fillStyle = bgGrad;
     ctxBack.fillRect(0,0,W,H);
 
+    // Atmospheric overlay in the dominant color — MORE visible
+    ctxBack.fillStyle = rgbStr(pal.p, 0.08 + field.awareness * 0.08);
+    ctxBack.fillRect(0,0,W,H);
+
+    // Wave lines — more visible than before
     for(let layer=0; layer<3; layer++){
       const amp = 40 + layer*20;
-      const op = 0.04 - layer*0.01;
-      ctxBack.strokeStyle = rgbStr(pal.p, op);
-      ctxBack.lineWidth = 0.6;
+      const op = 0.09 - layer*0.02;
+      ctxBack.strokeStyle = rgbStr(pal.m, op);
+      ctxBack.lineWidth = 0.7;
       for(let i=0;i<6;i++){
         ctxBack.beginPath();
         const baseY = (i/5)*H + Math.sin(t*0.3 + i + layer)*amp*0.3;
@@ -969,8 +945,8 @@
 
     if(field.unified){
       const uGrad = ctxBack.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*0.9);
-      uGrad.addColorStop(0, 'rgba(255,255,255,0.18)');
-      uGrad.addColorStop(0.3, 'rgba(230,230,255,0.08)');
+      uGrad.addColorStop(0, 'rgba(255,255,255,0.22)');
+      uGrad.addColorStop(0.3, 'rgba(230,230,255,0.1)');
       uGrad.addColorStop(1, 'rgba(255,255,255,0)');
       ctxBack.fillStyle = uGrad;
       ctxBack.fillRect(0,0,W,H);
@@ -1037,7 +1013,7 @@
           const dx = o.x-s.x, dy = o.y-s.y;
           const d2 = dx*dx+dy*dy;
           if(d2 < 3500){
-            const a = (1 - d2/3500) * (0.18 + s.awareness*0.3);
+            const a = (1 - d2/3500) * (0.22 + s.awareness*0.35);
             ctx.strokeStyle = rgbStr(pal.m, a);
             ctx.lineWidth = 0.5;
             ctx.beginPath();
@@ -1097,7 +1073,7 @@
 
     if(started && mouse.active){
       const mg = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 100);
-      mg.addColorStop(0, rgbStr(pal.l, 0.12));
+      mg.addColorStop(0, rgbStr(pal.l, 0.14));
       mg.addColorStop(1, rgbStr(pal.l, 0));
       ctx.fillStyle = mg;
       ctx.beginPath();
