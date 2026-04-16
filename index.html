@@ -546,20 +546,20 @@
   function initAudio(){
     if(audioReady) return;
     audioReady = true;
-    const limiter = new Tone.Limiter(-1).toDestination();
-    compressor = new Tone.Compressor({threshold: -20, ratio: 2.5, attack: 0.15, release: 0.4}).connect(limiter);
-    masterGain = new Tone.Gain(0.72).connect(compressor);
-    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.22, wet: 0.16}).connect(masterGain);
-    reverb = new Tone.Reverb({decay: 14, wet: 0.55}).connect(delay);
+    const limiter = new Tone.Limiter(-3).toDestination();
+    compressor = new Tone.Compressor({threshold: -24, ratio: 4, attack: 0.02, release: 0.25}).connect(limiter);
+    masterGain = new Tone.Gain(0.4).connect(compressor);
+    delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.18, wet: 0.12}).connect(masterGain);
+    reverb = new Tone.Reverb({decay: 10, wet: 0.38}).connect(delay);
 
-    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -9}).connect(reverb);
+    subDrone = new Tone.Oscillator({frequency: 32.7, type: 'sine', volume: -14}).connect(reverb);
     droneFilter = new Tone.Filter({frequency: 800, type: 'lowpass', Q: 0.3}).connect(reverb);
 
     drone1 = new Tone.FMSynth({
       harmonicity: 1.5, modulationIndex: 2.5,
       envelope: {attack: 5, decay: 1, sustain: 0.9, release: 10},
       modulationEnvelope: {attack: 4, decay: 1, sustain: 0.7, release: 8},
-      volume: -7
+      volume: -11
     }).connect(droneFilter);
 
     drone2 = new Tone.FMSynth({
@@ -578,25 +578,25 @@
     }).connect(droneFilter);
 
     pluck = new Tone.PolySynth(Tone.FMSynth, {
-      maxPolyphony: 48,
+      maxPolyphony: 24,
       harmonicity: 3, modulationIndex: 1.8,
       envelope: {attack: 0.01, decay: 2.2, sustain: 0, release: 2.5},
       modulationEnvelope: {attack: 0.005, decay: 0.8, sustain: 0, release: 1.8},
-      volume: -9
+      volume: -12
     }).connect(reverb);
 
     awakenSynth = new Tone.PolySynth(Tone.Synth, {
-      maxPolyphony: 32,
+      maxPolyphony: 12,
       oscillator: {type: 'sine'},
       envelope: {attack: 0.003, decay: 0.6, sustain: 0, release: 4},
-      volume: -2
+      volume: -12
     }).connect(reverb);
 
     bell = new Tone.PolySynth(Tone.FMSynth, {
-      maxPolyphony: 48,
+      maxPolyphony: 16,
       harmonicity: 4, modulationIndex: 4,
       envelope: {attack: 0.002, decay: 1.6, sustain: 0, release: 3},
-      volume: -6
+      volume: -12
     }).connect(reverb);
 
     // Soft chime for bond formations — very quiet, sparse
@@ -736,7 +736,7 @@
         const chord = ['C2','G2','C3','E3','G3','B3'];
         chord.forEach((n,i) => {
           setTimeout(() => {
-            try { bell.triggerAttackRelease(n, '4n', '+0', 0.55); } catch(e){}
+            try { bell.triggerAttackRelease(n, '4n', '+0', 0.38); } catch(e){}
           }, i*280);
         });
       } catch(e){}
@@ -798,11 +798,11 @@
         try {
           const scale = currentScale(field.awareness);
           const note = scale[best.pitchIdx % scale.length];
-          awakenSynth.triggerAttackRelease(note, '1n', undefined, 0.7);
+          awakenSynth.triggerAttackRelease(note, '2n', undefined, 0.45);
           const harm = Tone.Frequency(note).transpose(12).toNote();
-          bell.triggerAttackRelease(harm, '2n', '+0.12', 0.42);
+          bell.triggerAttackRelease(harm, '2n', '+0.12', 0.28);
           const fifth = Tone.Frequency(note).transpose(7).toNote();
-          bell.triggerAttackRelease(fifth, '2n', '+0.3', 0.3);
+          bell.triggerAttackRelease(fifth, '2n', '+0.3', 0.2);
         } catch(err){}
       }
     }
