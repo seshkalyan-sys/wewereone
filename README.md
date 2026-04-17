@@ -1,4 +1,4 @@
-# we were one process
+# we were one
 
 ### An interactive piece about distributed systems waking up together
 
