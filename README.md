@@ -92,13 +92,20 @@ If no mind is reachable, the mesh falls back to its original grammar and keeps t
 
 ## Sound
 
-Same instruments, notes and progressions, with the noise removed:
-- every FM voice now uses a sine modulator (Tone.js defaults to a buzzy square wave)
-- the 32 Hz sub that small speakers turned into rumble is now an octave up and quiet, and a 50 Hz high-pass removes the rest
-- the click voice is about 12 dB softer and has gentler attacks
-- the master has headroom and a soft 6 kHz low-pass
+The notes, chords and progressions are unchanged. The work was in mixing and playback:
+
+- **No buffer underruns.** The audio engine uses `latencyHint: 'playback'` and a 200 ms look-ahead. Before, the default 10 ms buffer ran dry whenever the page was busy, and that came out as crackle on every click.
+- **No click-time stalls.** Node and particle glows are drawn from pre-rendered sprites instead of hundreds of new gradients per frame. On a click burst, blocking tasks went from 50–96 ms to none.
+- **The click voice** is pure sine tones (note, a soft fifth, an octave below) with a 60 ms rounded attack, through its own 1.8 kHz low-pass. Notes above B4 fold down an octave so a ping stays out of the ear's most sensitive 1–4 kHz zone. Measured: 0.01% of click energy above 1 kHz, and nothing above 3 kHz.
+- **FM voices** use sine modulators (Tone.js defaults to a buzzy square wave).
+- **Low end:** the 32 Hz sub that small speakers turned into rumble moved up an octave, and a 50 Hz high-pass removes the rest.
+- **Master:** headroom, a soft 4.2 kHz low-pass and a shorter reverb.
 
 **SOUND** mutes it.
+
+## LLM indicator
+
+The dot at the top left is **green** once the model provider has actually answered. It's **yellow** while it is unreachable or still being checked, and the page re-checks every 30 seconds.
 
 ---
 

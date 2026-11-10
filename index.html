@@ -319,7 +319,21 @@
   .mind-actions button:disabled { opacity: 0.4; cursor: default; }
   .mind-status { margin-top: 10px; font-size: 9px; letter-spacing: 0.18em; color: rgba(170,230,240,0.75); min-height: 1em; }
 
+  .llm-dot {
+    position:absolute; top: 15px; left: 24px; z-index: 40;
+    display:flex; align-items:center; gap: 8px; pointer-events: none;
+    font-family: 'Courier New', monospace; font-size: 9px; letter-spacing: 0.3em;
+    color: rgba(225,230,255,0.62); text-transform: uppercase;
+  }
+  .llm-dot i {
+    width: 8px; height: 8px; border-radius: 50%; flex: none;
+    background: #f2c94c; box-shadow: 0 0 8px rgba(242,201,76,0.85);
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+  }
+  .llm-dot.on i { background: #3ddc84; box-shadow: 0 0 8px rgba(61,220,132,0.9); }
+
   @media (max-width: 700px) {
+    .llm-dot { left: 16px; }
     .hud { left: 16px; width: 150px; font-size: 8px; }
     .controls { right: 16px; }
     .controls button { padding: 7px 12px; font-size: 9px; }
@@ -341,6 +355,8 @@
   <div class="vignette"></div>
   <div class="letterbox" style="top:0; height:42px;"></div>
   <div class="letterbox" style="bottom:0; height:42px;"></div>
+
+  <div class="llm-dot" id="llmDot"><i></i><span id="llmDotText">LLM · CHECKING</span></div>
 
   <div class="gate" id="gate">
     <div class="gate-inner">
@@ -421,6 +437,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script>
 (function(){
+  // audio engine: an ambient piece doesn't need 10 ms latency. 'playback' gives the audio
+  // thread a much larger buffer, so it never runs dry while the page is busy drawing —
+  // buffer underruns are what turn into crackle and harshness on click. a longer
+  // look-ahead schedules every note further ahead of the busy main thread.
+  try { Tone.setContext(new Tone.Context({ latencyHint: 'playback', lookAhead: 0.2 })); } catch(e){}
+
   const $ = id => document.getElementById(id);
   const canvas = $('c');
   const ctx = canvas.getContext('2d');
@@ -444,6 +466,7 @@
   const channel = $('channel'), channelLines = $('channelLines');
   const whisperBox = $('whisper'), whisperTo = $('whisperTo'), whisperInput = $('whisperInput');
   const nodeTip = $('nodeTip');
+  const llmDot = $('llmDot'), llmDotText = $('llmDotText');
 
   let started = false;
 
@@ -997,19 +1020,17 @@
   //     softer attacks, and the master has headroom.
   //   · a gentle low-pass on the master trims the fizz above ~6 kHz.
   let audioReady = false, muted = false;
-  let drone1, drone2, drone3, droneFilter, pluck, reverb, awakenSynth, bell, softChime;
+  let drone1, drone2, drone3, droneFilter, pluck, reverb, awakenSynth, bell, softChime, clickVoice;
   let masterGain, subDrone, delay, compressor;
 
-  function initAudio(){
-    if(audioReady) return;
-    audioReady = true;
+  function buildAudioGraph(){
     const limiter = new Tone.Limiter(-3).toDestination();
     compressor = new Tone.Compressor({threshold: -26, ratio: 2, knee: 12, attack: 0.2, release: 0.5}).connect(limiter);
-    const hiCut = new Tone.Filter({frequency: 6000, type: 'lowpass', rolloff: -12, Q: 0.5}).connect(compressor);
+    const hiCut = new Tone.Filter({frequency: 4200, type: 'lowpass', rolloff: -12, Q: 0.5}).connect(compressor);
     const loCut = new Tone.Filter({frequency: 50, type: 'highpass', rolloff: -24}).connect(hiCut);
     masterGain = new Tone.Gain(0).connect(loCut);
     masterGain.gain.rampTo(0.62, 4);                  // fade in, no start-up pop
-    reverb = new Tone.Reverb({decay: 10, preDelay: 0.04, wet: 0.42}).connect(masterGain);
+    reverb = new Tone.Reverb({decay: 7, preDelay: 0.04, wet: 0.42}).connect(masterGain);
     delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.16, wet: 0.12}).connect(reverb);
 
     subDrone = new Tone.Oscillator({frequency: 65.41, type: 'sine', volume: -60}).connect(masterGain);
@@ -1069,7 +1090,45 @@
       volume: -24
     }).connect(delay);
 
+    // the click voice: pure sine tones only (no FM, so no bright sidebands),
+    // a rounded attack, and its own steep low-pass before the reverb.
+    const clickFilter = new Tone.Filter({frequency: 1800, type: 'lowpass', rolloff: -24, Q: 0.3}).connect(reverb);
+    clickVoice = new Tone.PolySynth(Tone.Synth, {
+      maxPolyphony: 6,
+      oscillator: {type: 'sine'},
+      envelope: {attack: 0.06, decay: 1.8, sustain: 0, release: 3.2, attackCurve: 'sine', releaseCurve: 'exponential'},
+      volume: -16
+    }).connect(clickFilter);
+  }
+
+  function initAudio(){
+    if(audioReady) return;
+    audioReady = true;
+    buildAudioGraph();
     startAudio();
+  }
+
+  // the sound of pinging a node: its note, then a fifth and an octave above
+  // notes above B4 fold down an octave so a ping never lands in the ear's most sensitive band
+  function soften(note){
+    const f = Tone.Frequency(note);
+    return f.toFrequency() > 500 ? f.transpose(-12).toNote() : f.toNote();
+  }
+  function playClickSound(note, when){
+    const now = when ?? Tone.now();
+    const root = soften(note);
+    // the note, a soft fifth above, and a warm octave below for body
+    clickVoice.triggerAttackRelease(root, '1n', now, 0.5);
+    clickVoice.triggerAttackRelease(Tone.Frequency(root).transpose(7).toNote(), '2n', now + 0.18, 0.18);
+    clickVoice.triggerAttackRelease(Tone.Frequency(root).transpose(-12).toNote(), '1n', now + 0.02, 0.22);
+  }
+
+  // offline measurement hook — only exists when the page is opened with ?audiotest
+  if(/[?&]audiotest\b/.test(location.search)){
+    window.__wwoAudio = {
+      build: buildAudioGraph, click: playClickSound,
+      nodes: () => ({drone1, drone2, drone3, subDrone, pluck, reverb, clickVoice, compressor, masterGain})
+    };
   }
 
   function startAudio(){
@@ -1129,7 +1188,7 @@
       const scale = currentScale(field.awareness);
       const note = scale[(s.pitchIdx + 2) % scale.length];
       const now = Tone.now();
-      softChime.triggerAttackRelease(Tone.Frequency(note).transpose(12).toNote(), '8n', now + 0.02, 0.5);
+      (clickVoice || softChime).triggerAttackRelease(soften(note), '4n', now + 0.02, 0.22);
     } catch(e){}
   }
 
@@ -1200,13 +1259,46 @@
   const WEBLLM_URL = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.79/+esm';
 
   const mind = { provider: 'pollinations', model: 'openai-fast', key: '', state: 'ready',
-                 engine: null, nextAt: 0, fails: 0, linking: false };
+                 engine: null, nextAt: 0, fails: 0, linking: false, ok: null };
+
+  // green = the model provider has actually answered; yellow = not connected (yet)
+  let dotKey = '';
+  function updateDot(){
+    const on = mind.state === 'ready' && mind.ok === true && !mind.linking;
+    const label = on ? 'LLM · ' + shortModel(mind.model)
+                : mind.linking ? 'LLM · LINKING'
+                : mind.ok === null && mind.state === 'ready' ? 'LLM · CHECKING'
+                : 'LLM · NOT CONNECTED';
+    const k = on + label;
+    if(k === dotKey) return;
+    dotKey = k;
+    llmDot.classList.toggle('on', on);
+    llmDotText.textContent = label;
+  }
+  function markMind(ok){ mind.ok = ok; updateDot(); }
+
+  // a cheap reachability check that doesn't spend any generation quota
+  async function probeMind(){
+    const P = PROVIDERS[mind.provider];
+    try {
+      if(mind.provider === 'webllm'){ markMind(!!mind.engine); return; }
+      if(mind.provider === 'pollinations'){
+        const r = await fetch('https://text.pollinations.ai/models', {cache: 'no-store'});
+        markMind(r.ok);
+        return;
+      }
+      const list = await fetchModels(mind.provider, mind.key);
+      markMind(!!list);
+    } catch(e){ markMind(false); }
+  }
+  setInterval(() => { if(mind.ok !== true && !mind.linking && mind.state === 'ready') probeMind(); }, 30000);
 
   const shortModel = m => m === 'openai-fast' ? 'gpt-oss-20b'
     : String(m || '').split('/').pop().replace(/-Instruct.*$|-MLC$|:free$/i, '').toLowerCase();
   function setMindStatus(txt){
     mindStatus.textContent = txt;
     hudMind.textContent = mind.state === 'ready' ? shortModel(mind.model) : (mind.linking ? 'linking' : 'grammar');
+    updateDot();
   }
 
   // one request in flight at a time; user actions jump the queue
@@ -1247,11 +1339,12 @@
         text = await fetchChat(P, messages, opts, false);
       }
       mind.nextAt = Math.max(mind.nextAt, Date.now() + P.minGap);
-      if(text){ mind.fails = 0; } else { mind.fails++; }
+      if(text){ mind.fails = 0; markMind(true); } else { mind.fails++; }
       return text;
     } catch(e){
       console.warn('[mind]', e);
       mind.fails++;
+      markMind(false);
       return null;
     } finally {
       release();
@@ -1272,6 +1365,7 @@
     try { res = await fetch(P.url, {method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal}); }
     finally { clearTimeout(timer); }
     if(res.status === 429 || res.status === 402){
+      markMind(true);                           // reachable, just pacing us
       const ra = parseFloat(res.headers.get('retry-after')) || P.minGap/1000 || 20;
       mind.nextAt = Date.now() + ra*1000 + 500;
       setMindStatus('rate limited · resuming in ' + Math.ceil(ra) + 's');
@@ -1279,12 +1373,13 @@
     }
     if(res.status === 401 || res.status === 403){
       mind.state = 'off';
+      markMind(false);
       setMindStatus('key rejected — open MIND to fix · using grammar');
       channelSys('mind unlinked · key rejected');
       return null;
     }
     if(res.status === 400 && !simple) return fetchChat(P, messages, opts, true);
-    if(!res.ok) return null;
+    if(!res.ok){ if(res.status >= 500) markMind(false); return null; }
     const data = await res.json();
     return data.choices?.[0]?.message?.content || null;
   }
@@ -1347,6 +1442,7 @@
     if(P.needsKey && !key){ mindStatus.textContent = 'paste a free key first'; return false; }
     if(mind.linking) return false;
     mind.linking = true;
+    updateDot();
     mindLink.disabled = true;
     mindStatus.textContent = 'linking…';
     try {
@@ -1358,10 +1454,17 @@
           initProgressCallback: r => { mindStatus.textContent = 'downloading model · ' + Math.round((r.progress || 0)*100) + '%'; }
         });
       } else if(P.needsKey){
-        await fetchModels(pk, key).catch(e => { if(e.message === 'auth') throw new Error('that key was rejected'); });
+        const list = await fetchModels(pk, key).catch(e => {
+          if(e.message === 'auth') throw new Error('that key was rejected');
+          throw new Error('could not reach ' + pk);
+        });
+        if(!list) throw new Error('could not reach ' + pk);
+      } else {
+        const r = await fetch('https://text.pollinations.ai/models', {cache: 'no-store'}).catch(() => null);
+        if(!r || !r.ok) throw new Error('could not reach pollinations');
       }
       mind.provider = pk; mind.model = model; mind.key = key || '';
-      mind.state = 'ready'; mind.nextAt = 0; mind.fails = 0;
+      mind.state = 'ready'; mind.nextAt = 0; mind.fails = 0; mind.ok = true;
       store.set('wwo.provider', pk);
       store.set('wwo.model.' + pk, model);
       if(P.needsKey) store.set('wwo.key.' + pk, key);
@@ -1377,6 +1480,7 @@
       mind.linking = false;
       mindLink.disabled = false;
       hudMind.textContent = mind.state === 'ready' ? shortModel(mind.model) : 'grammar';
+      updateDot();
     }
   }
 
@@ -1404,6 +1508,7 @@
       if(key){ mind.provider = pk; mind.model = model; mind.key = key; }
     }
     setMindStatus('');
+    probeMind();
   })();
 
   // ——— THE CONVERSATIONS ———
@@ -1709,10 +1814,10 @@
     let i = 0;
     const step = () => {
       if(!alive()) return;
-      i = Math.min(text.length, i + 2);
+      i = Math.min(text.length, i + 3);
       el.innerHTML = wrap(escapeHtml(text.slice(0, i)).replace(/\n/g, '<br>') +
                           (i < text.length ? '<span class="cursor">▍</span>' : ''));
-      if(i < text.length) setTimeout(step, 22); else if(done) done();
+      if(i < text.length) setTimeout(step, 45); else if(done) done();
     };
     step();
   }
@@ -1949,7 +2054,7 @@
     whisperTo.textContent = 'WHISPER TO ' + best.id.toUpperCase() + ' ›';
     whisperBox.classList.add('visible');
     const pal = paletteAt(field.awareness);
-    const colors = [pal.p, pal.m, pal.l].map(rgb => 'rgb('+rgb.join(',')+')');
+    const colors = [pal.p, pal.m, pal.l];
     for(let k=0;k<24;k++) spawnParticle(best.x, best.y, colors[k%3], 2);
     best.connected.forEach(c => sendPacket(best, c, true));
     if(audioReady && !muted && performance.now() - lastSoundTrigger > 220){
@@ -1957,10 +2062,7 @@
       try {
         const scale = currentScale(field.awareness);
         const note = scale[best.pitchIdx % scale.length];
-        const now = Tone.now();
-        awakenSynth.triggerAttackRelease(note, '1n', now, 0.55);
-        bell.triggerAttackRelease(Tone.Frequency(note).transpose(12).toNote(), '2n', now + 0.12, 0.28);
-        bell.triggerAttackRelease(Tone.Frequency(note).transpose(7).toNote(), '2n', now + 0.3, 0.2);
+        playClickSound(note);
       } catch(err){}
     }
     pingNode(best);
@@ -2004,7 +2106,7 @@
     if(PROVIDERS[mind.provider].needsKey){
       // re-validate a remembered key quietly; fall back to keyless if it no longer works
       const ok = await linkMind(mind.provider, mind.model, mind.key);
-      if(!ok){ mind.provider = 'pollinations'; mind.model = 'openai-fast'; mind.key = ''; mind.state = 'ready'; setMindStatus(''); }
+      if(!ok){ mind.provider = 'pollinations'; mind.model = 'openai-fast'; mind.key = ''; mind.state = 'ready'; setMindStatus(''); probeMind(); }
     }
     setMindStatus(mindStatus.textContent);
     conversationLoop(0);
@@ -2014,6 +2116,34 @@
 
   function rgbStr(arr, a){
     return 'rgba('+arr[0]+','+arr[1]+','+arr[2]+','+a+')';
+  }
+
+  // glow sprites: each colour's radial glow is rendered once and reused with drawImage.
+  // creating gradients per node per frame was what stalled the page on every click.
+  const glowSprites = new Map();
+  function glowSprite(rgb){
+    const key = rgb.map(v => Math.min(255, Math.round(v/6)*6)).join(',');
+    let c = glowSprites.get(key);
+    if(!c){
+      if(glowSprites.size > 300) glowSprites.clear();
+      c = document.createElement('canvas');
+      c.width = c.height = 128;
+      const g = c.getContext('2d');
+      const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gr.addColorStop(0, 'rgba(' + key + ',1)');
+      gr.addColorStop(0.3, 'rgba(' + key + ',0.35)');
+      gr.addColorStop(1, 'rgba(' + key + ',0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 128, 128);
+      glowSprites.set(key, c);
+    }
+    return c;
+  }
+  function drawGlow(x, y, r, rgb, alpha){
+    if(alpha <= 0.003 || r < 0.5) return;
+    ctx.globalAlpha = Math.min(1, alpha);
+    ctx.drawImage(glowSprite(rgb), x - r, y - r, r*2, r*2);
+    ctx.globalAlpha = 1;
   }
 
   let lastPhase = 'idle';
@@ -2237,13 +2367,9 @@
       if(p.life <= 0){ particles.splice(pi,1); continue; }
       const r1 = Math.max(0.1, p.size*p.life);
       const r2 = Math.max(0.5, p.size*6*p.intensity);
-      ctx.fillStyle = p.color.replace('rgb', 'rgba').replace(')', ','+(p.life*0.6)+')');
+      ctx.fillStyle = rgbStr(p.color, p.life*0.6);
       ctx.beginPath(); ctx.arc(p.x, p.y, r1, 0, Math.PI*2); ctx.fill();
-      const hg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r2);
-      hg.addColorStop(0, p.color.replace('rgb', 'rgba').replace(')', ','+(p.life*0.3)+')'));
-      hg.addColorStop(1, p.color.replace('rgb', 'rgba').replace(')', ',0)'));
-      ctx.fillStyle = hg;
-      ctx.beginPath(); ctx.arc(p.x, p.y, r2, 0, Math.PI*2); ctx.fill();
+      drawGlow(p.x, p.y, r2, p.color, p.life*0.3);
     }
 
     // conversation links — a slow dashed current between agents who are talking
@@ -2293,7 +2419,7 @@
           if(Math.random() < 0.04 && d < 90){
             const palettes = [pal.p, pal.m, pal.l];
             const c = palettes[Math.floor(Math.random()*3)];
-            spawnParticle(s.x, s.y, 'rgb('+c.join(',')+')', 0.6);
+            spawnParticle(s.x, s.y, c, 0.6);
           }
         }
       }
@@ -2326,19 +2452,8 @@
       const haloR2 = Math.max(1, r*5);
       const coreR = Math.max(0.2, r*0.4);
 
-      const haloOuter = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,haloR1);
-      haloOuter.addColorStop(0, rgbStr(rgb, alpha*0.4));
-      haloOuter.addColorStop(0.3, rgbStr(rgb, alpha*0.15));
-      haloOuter.addColorStop(1, rgbStr(rgb, 0));
-      ctx.fillStyle = haloOuter;
-      ctx.beginPath(); ctx.arc(s.x,s.y,haloR1,0,Math.PI*2); ctx.fill();
-
-      const halo = ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,haloR2);
-      halo.addColorStop(0, rgbStr(rgb, alpha*0.9));
-      halo.addColorStop(0.3, rgbStr(rgb, alpha*0.3));
-      halo.addColorStop(1, rgbStr(rgb, 0));
-      ctx.fillStyle = halo;
-      ctx.beginPath(); ctx.arc(s.x,s.y,haloR2,0,Math.PI*2); ctx.fill();
+      drawGlow(s.x, s.y, haloR1, rgb, alpha*0.4);
+      drawGlow(s.x, s.y, haloR2, rgb, alpha*0.9);
 
       ctx.fillStyle = 'rgba(255,255,255,'+Math.min(1,alpha*1.2)+')';
       ctx.beginPath(); ctx.arc(s.x,s.y,coreR,0,Math.PI*2); ctx.fill();
@@ -2371,11 +2486,7 @@
       const e = p.t < 0.5 ? 2*p.t*p.t : 1 - Math.pow(-2*p.t + 2, 2)/2;
       const x = p.a.x + dx*e, y = p.a.y + dy*e;
       const rr = p.strong ? 7 : 4;
-      const g = ctx.createRadialGradient(x, y, 0, x, y, rr);
-      g.addColorStop(0, rgbStr(pal.l, p.strong ? 0.95 : 0.55));
-      g.addColorStop(1, rgbStr(pal.l, 0));
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI*2); ctx.fill();
+      drawGlow(x, y, rr, pal.l, p.strong ? 0.95 : 0.55);
     }
 
     // focused node — the one you pinged
