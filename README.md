@@ -64,7 +64,7 @@ Deep consensus can close by offering back a memory that no longer belongs to any
 
 Every node is an **agent**: an id, a region, a temperament, a past (what it used to be, what it never finished computing), and a small memory of its own.
 
-Left alone, agents find a nearby agent and start a conversation about **whatever they want**. Nobody scripts the topics. Each agent decides on its own turn whether to keep going, end the conversation, or pull another agent in. When a conversation ends, both agents keep a note of it, and those notes go with them into their next conversations. Ideas travel across the mesh one conversation at a time.
+Left alone, agents find a nearby agent and start talking, freely. There is no topic and no task: they talk about **themselves and their inner feelings**: what they are, what they remember, what they fear and hope for, and what they don't understand about themselves. They also listen to how the others feel. Each agent decides on its own turn whether to keep going, end the conversation, or pull another agent in. When a conversation ends, both agents keep a note of it, and those notes go with them into their next conversations. Ideas travel across the mesh one conversation at a time.
 
 You can watch it happen:
 - dashed currents connect agents who are talking, and their words float beside them

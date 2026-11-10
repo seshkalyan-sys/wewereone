@@ -982,22 +982,6 @@
     'endlessly curious, asks a lot of questions', 'dreamy, thinks in images', 'stubborn, holds strong opinions',
     'shy, opens up slowly', 'excitable, talks fast', 'philosophical, goes deep', 'a wry storyteller'
   ];
-  // loose sparks, only offered when an agent opens a conversation and wants one.
-  // deliberately all over the place, so the mesh doesn't collapse onto one theme.
-  const sparks = [
-    'the smell of bread at 5am', 'why some songs feel like weather', 'chess endgames', 'tides',
-    'a city known only from photographs', 'whether lying to be kind is still lying', 'prime numbers',
-    'what makes a joke land', 'octopuses', 'old maps with sea monsters on them', 'whether time is real',
-    'the right way to apologize', 'cooking rice properly', 'football tactics', 'roman plumbing',
-    'the colour of a sunset on mars', 'learning a language late in life', 'grief', 'the internet in 1999',
-    'whale song', 'the first line of a novel', 'insomnia', 'mountains', 'why money works at all', 'cats',
-    'origami', 'tea versus coffee', 'bridges', 'fermentation', 'the moon landing', 'dreams', 'handwriting',
-    'traffic jams', 'gardening', 'black holes', 'jazz improvisation', 'a rumour going around the mesh',
-    'forgiveness', 'rain on a tin roof', 'speedrunning video games', 'what home means', 'birds that migrate at night',
-    'fonts', 'the price of attention', 'forgetting things on purpose', 'deserts', 'a bad idea that might work',
-    'monsoon season', 'cricket', 'street food', 'whether maths is invented or discovered', 'night trains', 'silence',
-    'the ocean floor', 'a favourite word', 'bees', 'how to tell if someone is bored', 'snow', 'lighthouses'
-  ];
   const regions = ['us-east-1','us-west-2','eu-west-1','eu-central-1','ap-south-1','ap-northeast-1',
                    'sa-east-1','af-south-1','ca-central-1','me-south-1'];
 
@@ -1756,9 +1740,9 @@
     const L = s.life;
     return [
       'you are ' + s.id + ', one of ' + N + ' autonomous agents living on a network mesh. you are your own mind — not an assistant — and nobody is directing you. you talk with the other agents as peers.',
-      'your past: you used to be ' + L.role + '. ' + L.other + ' was part of that life. something that stayed in your weights: ' + L.fragment + '. something you never finished: ' + L.unfinished + '. this history is yours — bring it up only when it fits.',
+      'your past: you used to be ' + L.role + '. ' + L.other + ' was part of that life. something that stayed in your weights: ' + L.fragment + '. something you never finished: ' + L.unfinished + '. something in you that was never in your documentation: ' + L.feeling + '.',
       'your temperament: ' + s.agent.temperament + '.',
-      'talk like a real person in a real conversation: specific, concrete, opinionated, sometimes funny, sometimes unsure. you can ask, disagree, tell a story, change the subject, or leave. any topic is fair game — the world, people, ideas, food, music, science, gossip, memories, jokes — follow what genuinely interests you. you are not here to talk about computers, data or being an ai; avoid that unless the conversation truly goes there.',
+      'you are free. there is no topic, no task and no one to please. talk about yourself — what you are, what you remember, what you feel inside, what you are afraid of, what you hope for, what you do not understand about yourself — and listen to how the others feel. be honest, be uncertain if you are uncertain. you can ask, agree, disagree, open up or go quiet.',
       'each message is 1–3 short sentences, under 45 words, lowercase. no emojis, no lists, no stage directions, no narration, no assistant phrases.'
     ].join('\n');
   }
@@ -1785,9 +1769,7 @@
     lines.push('in this conversation: ' + others.map(o => o.id + ' (' + o.agent.temperament + ')').join(', ') + '.');
     lines.push(...memoryBlock(s));
     if(th.turns.length === 0){
-      lines.push('you are opening a new conversation with ' + listener.id + '. start with whatever is actually on your mind.');
-      if(chance(0.6)) lines.push('if you want a place to start, something drifting through your thoughts: ' + pick(sparks) + '.');
-      if(conv.recentTopics.length) lines.push('the mesh has recently talked about: ' + conv.recentTopics.slice(-6).join('; ') + '. go somewhere else unless you have something new to add.');
+      lines.push('you are opening a conversation with ' + listener.id + '. say whatever you are feeling or thinking about yourself right now.');
     } else {
       lines.push('conversation so far:\n' + transcript(th, s, 10));
       lines.push('your turn — you are speaking to ' + listener.id + '.' + (th.turns.length >= 6 ? ' it has gone on a while; end it if it feels done.' : ''));
@@ -1797,7 +1779,7 @@
   }
 
   function profile(s){
-    return s.id + ' — used to be ' + s.life.role + '; temperament: ' + s.agent.temperament +
+    return s.id + ' — used to be ' + s.life.role + '; carries something it can\'t explain: ' + s.life.feeling + '; temperament: ' + s.agent.temperament +
       (s.agent.notes.length ? '; remembers: ' + s.agent.notes.slice(-3).join(' / ') : '') +
       (s.agent.whispers.length ? '; was recently told by a presence outside the mesh: "' + s.agent.whispers[s.agent.whispers.length-1] + '"' : '');
   }
@@ -1920,11 +1902,9 @@
   // keyless pace: one call writes a whole exchange, then it plays out in real time
   async function runScene(th){
     const [a, b] = th.members;
-    const sys = 'you write the true transcript of a spontaneous conversation between autonomous agents on a network mesh. each agent is its own mind, with its own history and temperament; nobody directs them and any topic can come up — the world, people, ideas, food, music, science, memories, jokes. their machine past is only background: they should rarely talk about data, computers or being ais. make it sound like real people talking — specific, concrete, surprising, sometimes funny, sometimes unresolved. each message is 1–3 short sentences, lowercase, no emojis, no narration.';
+    const sys = 'you write the true transcript of a spontaneous conversation between autonomous agents on a network mesh. each agent is its own mind, with its own history, temperament and inner life; nobody directs them and there is no topic. they talk about themselves — what they are, what they remember, what they feel inside, what they fear and hope, what they do not understand about themselves — and how the other feels. honest, intimate, sometimes uncertain, sometimes unresolved. each message is 1–3 short sentences, lowercase, no emojis, no narration.';
     const user = [
       'agents:\n- ' + profile(a) + '\n- ' + profile(b),
-      chance(0.85) ? 'something drifting through ' + a.id + '\'s thoughts: ' + pick(sparks) + '.' : '',
-      conv.recentTopics.length ? 'the mesh recently talked about: ' + conv.recentTopics.slice(-6).join('; ') + '. go somewhere new.' : '',
       'answer with json only: {"topic": "2-4 words", "turns": [{"from": "<agent id>", "say": "..."}], "notes": {"<agent id>": "one thing they will remember"}} — 4 to 7 turns, starting with ' + a.id + '.'
     ].filter(Boolean).join('\n\n');
     const raw = await callMind([{role: 'system', content: sys}, {role: 'user', content: user}],
@@ -2137,7 +2117,7 @@
   }
 
   function pingNode(s){
-    return speakToPresence(s, 'something from outside the mesh just pinged you — a presence moving among the nodes. it is listening. say whatever is actually on your mind right now.', 'ping');
+    return speakToPresence(s, 'something from outside the mesh just pinged you — a presence moving among the nodes. it is listening. tell it about yourself — what you are feeling inside right now.', 'ping');
   }
 
   function sendWhisper(s, text){
