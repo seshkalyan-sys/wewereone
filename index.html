@@ -393,6 +393,32 @@
     .gate-btn { padding: 11px 32px; }
     .gate-hint { margin-top: 12px; }
   }
+
+  /* ——— node transmissions live bottom-right, stacked above the whisper box ——— */
+  .memory-overlay {
+    top: auto; left: auto; right: 24px; bottom: 124px; transform: none;
+    width: min(380px, 34vw); max-width: none; padding: 14px 18px 12px;
+    align-items: flex-start; text-align: left;
+    background: rgba(5,8,18,0.58); border: 0.5px solid rgba(200,230,255,0.16); border-radius: 12px;
+    backdrop-filter: blur(8px);
+  }
+  .memory-label { margin-bottom: 10px; font-size: 9px; letter-spacing: 0.35em; }
+  .memory-reason { text-align: left; font-size: 10px; margin-bottom: 8px; max-width: none; }
+  .memory-text { font-size: 15px; line-height: 1.55; text-align: left;
+    text-shadow: 0 0 12px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.9); }
+  .memory-meta { margin-top: 10px; font-size: 8px; letter-spacing: 0.18em; }
+  @media (min-width: 701px) and (max-width: 1100px) {
+    .memory-overlay { width: min(360px, 42vw); }
+  }
+  @media (max-width: 700px) {
+    .memory-overlay { left: 16px; right: 16px; width: auto; bottom: 290px; padding: 12px 14px 10px; }
+    .memory-text { font-size: 14px; }
+  }
+  @media (max-height: 500px) and (orientation: landscape) {
+    .memory-overlay { left: auto; right: 24px; width: min(300px, 38vw); bottom: 92px; padding: 8px 12px; max-height: 210px; overflow: hidden; }
+    .memory-text { font-size: 12px; }
+    .memory-reason { display: none; }
+  }
 </style>
 </head>
 <body>
