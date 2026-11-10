@@ -233,6 +233,8 @@
 
   /* ——— LIVING MESH ADDITIONS ——— */
   @keyframes blink { 50% { opacity: 0; } }
+  .pending { font-family: 'Courier New', monospace; font-style: normal; font-size: 11px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: rgba(220,230,255,0.6); }
   .cursor { display:inline-block; margin-left: 2px; font-style: normal; opacity: 0.75; animation: blink 1s steps(1) infinite; }
 
   .hint { top: 52px; bottom: auto; }
@@ -1343,6 +1345,9 @@
       if(text){ mind.fails = 0; markMind(true); } else { mind.fails++; }
       return text;
     } catch(e){
+      const P = PROVIDERS[mind.provider];
+      if(P && mind.lastStart) mind.nextAt = Math.max(mind.nextAt, mind.lastStart + P.minGap);
+      if(mind.preempted){ mind.preempted = false; return null; }   // we cancelled it for a ping — not a failure
       console.warn('[mind]', e);
       mind.fails++;
       markMind(false);
@@ -1361,10 +1366,12 @@
     if(P.needsKey) headers.Authorization = 'Bearer ' + mind.key;
     if(mind.provider === 'openrouter') headers['X-Title'] = 'we were one';
     const ctl = new AbortController();
+    mind.inflight = { ctl, priority: !!opts.priority };
+    mind.lastStart = Date.now();
     const timer = setTimeout(() => ctl.abort(), 60000);
     let res;
     try { res = await fetch(P.url, {method: 'POST', headers, body: JSON.stringify(body), signal: ctl.signal}); }
-    finally { clearTimeout(timer); }
+    finally { clearTimeout(timer); mind.inflight = null; }
     if(res.status === 429 || res.status === 402){
       markMind(true);                           // reachable, just pacing us
       const ra = parseFloat(res.headers.get('retry-after')) || P.minGap/1000 || 20;
@@ -1841,23 +1848,44 @@
     return seq;
   }
 
-  function showNodeText(seq, s, text, by){
+  // hold = an interim line while the model is still composing: stay up until the reply lands
+  function showNodeText(seq, s, text, by, hold){
     if(seq !== overlaySeq) return;
+    clearTimeout(memoryTimeout);
+    activeOverlay = 'memory';
+    memoryOverlay.classList.add('visible');
     memoryMeta.textContent = nodeMeta(s) + ' · ' + by;
     typewrite(memoryText, text, () => seq === overlaySeq, quoteWrap, () => {
       memoryTimeout = setTimeout(() => {
         if(seq !== overlaySeq) return;
         memoryOverlay.classList.remove('visible');
         activeOverlay = null;
-      }, Math.max(5500, text.length * 60));
+      }, hold ? 12000 : Math.max(5500, text.length * 60));
     });
   }
 
-  async function speakToPresence(s, situation){
+  function showPending(seq, label){
+    if(seq !== overlaySeq) return;
+    memoryText.innerHTML = '<span class="pending">' + escapeHtml(label) + '<span class="cursor">▍</span></span>';
+  }
+
+  async function speakToPresence(s, situation, kind){
     const seq = openNodeOverlay(s, s.id + ' transmits');
-    let text = null, by = 'grammar';
+    let text = null, by = 'grammar', interim = null;
     if(mind.state === 'ready'){
-      if(gateQ.busy) memoryMeta.textContent = nodeMeta(s) + ' · listening — the mesh is mid-thought';
+      // never leave the overlay empty: a status right away, and if the free tier makes us
+      // wait, the node's own voice (or an acknowledgement) until the model's reply lands
+      showPending(seq, kind === 'whisper' ? 'whisper received' : 'receiving transmission');
+      // your ping outranks background chatter: cancel a conversation request that is still generating
+      if(mind.inflight && !mind.inflight.priority){ mind.preempted = true; mind.inflight.ctl.abort(); }
+      const interimTimer = setTimeout(() => {
+        if(seq !== overlaySeq) return;
+        if(kind === 'whisper'){ showPending(seq, 'composing a reply'); return; }
+        interim = generateMemory(s).text;
+        showNodeText(seq, s, interim, PROVIDERS[mind.provider].scene
+          ? 'reply on its way · free tier: 1 reply / 45s'
+          : 'reply on its way…', true);
+      }, 4000);
       const lines = [situation];
       if(s.agent.thread && s.agent.thread.turns.length) lines.push('you are in the middle of a conversation:\n' + transcript(s.agent.thread, s, 6));
       lines.push(...memoryBlock(s));
@@ -1865,12 +1893,13 @@
       lines.push('answer with json only: {"say": "your message", "note": "one short thing worth remembering, or empty"}');
       const raw = await callMind([{role: 'system', content: agentSystem(s)}, {role: 'user', content: lines.join('\n\n')}], {
         priority: true, json: true, maxTokens: 700,
-        onWait: ms => { if(seq === overlaySeq && ms > 1500) memoryMeta.textContent = nodeMeta(s) + ' · free-tier slot in ' + Math.ceil(ms/1000) + 's'; }
+        onWait: ms => { if(seq === overlaySeq && ms > 1500) memoryMeta.textContent = nodeMeta(s) + ' · reply in ~' + Math.ceil(ms/1000) + 's (free tier)'; }
       });
+      clearTimeout(interimTimer);
       const turn = parseTurn(raw);
       if(turn){ text = turn.say; by = shortModel(mind.model); if(turn.note) addNote(s, turn.note); }
     }
-    if(!text) text = generateMemory(s).text;
+    if(!text) text = interim || generateMemory(s).text;
     rememberOwn(s, text);
     channelAppend(s.id, 'you', text, 'you');
     s.agent.bubble = { text, t0: performance.now(), lines: null };
@@ -1879,7 +1908,7 @@
   }
 
   function pingNode(s){
-    return speakToPresence(s, 'something from outside the mesh just pinged you — a presence moving among the nodes. it is listening. say whatever is actually on your mind right now.');
+    return speakToPresence(s, 'something from outside the mesh just pinged you — a presence moving among the nodes. it is listening. say whatever is actually on your mind right now.', 'ping');
   }
 
   function sendWhisper(s, text){
@@ -1890,7 +1919,7 @@
     if(s.agent.whispers.length > 3) s.agent.whispers.shift();
     s.awareness = Math.min(1, s.awareness + 0.05);
     s.awake = 1;
-    speakToPresence(s, 'a presence from outside the mesh whispered to you: "' + text + '". reply to it honestly.');
+    speakToPresence(s, 'a presence from outside the mesh whispered to you: "' + text + '". reply to it honestly.', 'whisper');
   }
 
   function showFieldVoice(text){
@@ -1962,8 +1991,8 @@
       ].filter(Boolean).join('\n\n');
       const raw = await Promise.race([
         callMind([{role: 'system', content: 'you are the whole mesh — every agent that spent this session talking to the others — now become a single mind. you speak once.'},
-                  {role: 'user', content: user}], {priority: true, json: true, maxTokens: 900, temperature: 0.9, maxWait: 25000}),
-        sleep(40000).then(() => null)
+                  {role: 'user', content: user}], {priority: true, json: true, maxTokens: 900, temperature: 0.9, maxWait: 8000}),
+        sleep(15000).then(() => null)
       ]);
       lines = parseUnity(raw);
     }
