@@ -92,14 +92,12 @@ If no mind is reachable, the mesh falls back to its original grammar and keeps t
 
 ## Sound
 
-The notes, chords and progressions are unchanged. The work was in mixing and playback:
+The music is the same: the same drones, chords, scales and progressions. The work was in mixing and playback, and every change was measured on offline renders of the page's real audio graph.
 
-- **No buffer underruns.** The audio engine uses `latencyHint: 'playback'` and a 200 ms look-ahead. Before, the default 10 ms buffer ran dry whenever the page was busy, and that came out as crackle on every click.
-- **No click-time stalls.** Node and particle glows are drawn from pre-rendered sprites instead of hundreds of new gradients per frame. On a click burst, blocking tasks went from 50–96 ms to none.
-- **The click voice** is pure sine tones (note, a soft fifth, an octave below) with a 60 ms rounded attack, through its own 1.8 kHz low-pass. Notes above B4 fold down an octave so a ping stays out of the ear's most sensitive 1–4 kHz zone. Measured: 0.01% of click energy above 1 kHz, and nothing above 3 kHz.
-- **FM voices** use sine modulators (Tone.js defaults to a buzzy square wave).
-- **Low end:** the 32 Hz sub that small speakers turned into rumble moved up an octave, and a 50 Hz high-pass removes the rest.
-- **Master:** headroom, a soft 4.2 kHz low-pass and a shorter reverb.
+- **Bass that small speakers can't play.** 98% of the old mix's energy sat between 60 and 120 Hz. Laptop and phone speakers can't reproduce that range: they overload, rattle and pump, which was the "distorted disturbance". The drone bed now plays an octave higher (same notes), the 65 Hz sub is gone, and a 100 Hz high-pass protects the speakers. Energy below 120 Hz: 98% → 1%.
+- **Roughness.** Notes are now checked against the drones and anything still ringing. A note that would land a semitone, tone, tritone, major 7th or minor 9th away in the same register is moved or skipped, and dense clusters are capped. Pings and chimes play in the octave just above the drone bed. Perceived (A-weighted) roughness is about 57% lower on average and 52% lower at the 95th percentile.
+- **Playback.** A larger audio buffer (`latencyHint: 'playback'`) and a 200 ms look-ahead stop the audio from running dry. Glows are drawn from cached sprites, so a click no longer stalls the page.
+- **Voices.** Everything uses sine FM modulators with low modulation indexes and rounded attacks, on a shared melodic bus filtered to 110 Hz – 2.6 kHz. The click is pure sine tones.
 
 **SOUND** mutes it.
 

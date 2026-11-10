@@ -233,6 +233,14 @@
 
   /* ——— LIVING MESH ADDITIONS ——— */
   @keyframes blink { 50% { opacity: 0; } }
+  .memory-reason {
+    font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.6; letter-spacing: 0.04em;
+    color: rgba(170,230,240,0.62); text-align: center; max-width: 620px;
+    max-height: 5.2em; overflow: hidden; margin-bottom: 14px;
+    text-shadow: 0 0 10px rgba(0,0,0,0.95);
+  }
+  .memory-reason:empty { display: none; }
+  .memory-reason .k { color: rgba(255,225,190,0.72); }
   .pending { font-family: 'Courier New', monospace; font-style: normal; font-size: 11px;
     letter-spacing: 0.35em; text-transform: uppercase; color: rgba(220,230,255,0.6); }
   .cursor { display:inline-block; margin-left: 2px; font-style: normal; opacity: 0.75; animation: blink 1s steps(1) infinite; }
@@ -372,6 +380,7 @@
 
   <div class="memory-overlay" id="memoryOverlay">
     <div class="memory-label" id="memoryLabel">A NODE TRANSMITS</div>
+    <div class="memory-reason" id="memoryReason"></div>
     <div class="memory-text" id="memoryText"></div>
     <div class="memory-meta" id="memoryMeta"></div>
   </div>
@@ -454,7 +463,7 @@
   const gate = $('gate'), gateBtn = $('gateBtn');
   const hud = $('hud'), controls = $('controls'), hint = $('hint');
   const memoryOverlay = $('memoryOverlay'), memoryLabel = $('memoryLabel');
-  const memoryText = $('memoryText'), memoryMeta = $('memoryMeta');
+  const memoryText = $('memoryText'), memoryMeta = $('memoryMeta'), memoryReason = $('memoryReason');
   const fieldVoiceOverlay = $('fieldVoiceOverlay'), fieldVoiceText = $('fieldVoiceText');
   const unityOverlay = $('unityOverlay'), unityText = $('unityText');
   const hudSouls = $('hudSouls'), hudConn = $('hudConn'), hudMsgs = $('hudMsgs');
@@ -1024,14 +1033,20 @@
   let audioReady = false, muted = false;
   let drone1, drone2, drone3, droneFilter, pluck, reverb, awakenSynth, bell, softChime, clickVoice;
   let masterGain, subDrone, delay, compressor;
+  // the drone bed, an octave higher than before (same notes, same harmony) and sitting
+  // under the melody instead of 30 dB above it
+  const DRONE_NOTES = ['C3', 'G3', 'C4'];
+  const DRONE_DB = [-24, -28, -31];
 
   function buildAudioGraph(){
     const limiter = new Tone.Limiter(-3).toDestination();
-    compressor = new Tone.Compressor({threshold: -26, ratio: 2, knee: 12, attack: 0.2, release: 0.5}).connect(limiter);
+    compressor = new Tone.Compressor({threshold: -18, ratio: 2, knee: 10, attack: 0.25, release: 0.6}).connect(limiter);
     const hiCut = new Tone.Filter({frequency: 4200, type: 'lowpass', rolloff: -12, Q: 0.5}).connect(compressor);
-    const loCut = new Tone.Filter({frequency: 50, type: 'highpass', rolloff: -24}).connect(hiCut);
+    // small speakers can't move air below ~100 Hz; feeding them that range is what made them
+    // overload, rattle and pump. the bed now lives where every speaker can play it cleanly.
+    const loCut = new Tone.Filter({frequency: 100, type: 'highpass', rolloff: -12, Q: 0.5}).connect(hiCut);
     masterGain = new Tone.Gain(0).connect(loCut);
-    masterGain.gain.rampTo(0.62, 4);                  // fade in, no start-up pop
+    masterGain.gain.rampTo(1.4, 4);                   // fade in, no start-up pop (level set for ~-14 dBFS peaks)
     reverb = new Tone.Reverb({decay: 7, preDelay: 0.04, wet: 0.42}).connect(masterGain);
     delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.16, wet: 0.12}).connect(reverb);
 
@@ -1045,61 +1060,61 @@
       harmonicity: 1, modulationIndex: 0.8, modulation: sineMod,
       envelope: {attack: 5, decay: 1, sustain: 0.9, release: 10},
       modulationEnvelope: {attack: 4, decay: 1, sustain: 0.7, release: 8},
-      volume: -17
+      volume: DRONE_DB[0]
     }).connect(droneFilter);
 
     drone2 = new Tone.FMSynth({
       harmonicity: 2, modulationIndex: 0.6, modulation: sineMod,
       envelope: {attack: 6, decay: 1, sustain: 0.8, release: 11},
       modulationEnvelope: {attack: 5, decay: 1, sustain: 0.6, release: 9},
-      volume: -21
+      volume: DRONE_DB[1]
     }).connect(droneFilter);
 
     drone3 = new Tone.FMSynth({
       harmonicity: 3, modulationIndex: 0.4, modulation: sineMod,
       envelope: {attack: 7, decay: 1, sustain: 0.7, release: 12},
       modulationEnvelope: {attack: 6, decay: 1, sustain: 0.5, release: 10},
-      volume: -25
+      volume: DRONE_DB[2]
     }).connect(droneFilter);
 
-    pluck = new Tone.PolySynth(Tone.FMSynth, {
-      maxPolyphony: 16,
-      harmonicity: 3, modulationIndex: 1.1, modulation: sineMod,
-      envelope: {attack: 0.012, decay: 2.2, sustain: 0, release: 2.5},
-      modulationEnvelope: {attack: 0.01, decay: 0.6, sustain: 0, release: 1.2},
-      volume: -19
-    }).connect(delay);
+    // ——— melodic bus ———
+    // every pitched voice shares one gentle band: a high-pass clears mud below 110 Hz,
+    // a steep low-pass at 2.6 kHz keeps everything out of the ear's harsh presence region.
+    const air = new Tone.Filter({frequency: 2600, type: 'lowpass', rolloff: -24, Q: 0.3}).connect(delay);
+    const tonal = new Tone.Filter({frequency: 110, type: 'highpass', rolloff: -12, Q: 0.3}).connect(air);
 
-    awakenSynth = new Tone.PolySynth(Tone.Synth, {
-      maxPolyphony: 8,
-      oscillator: {type: 'sine'},
-      envelope: {attack: 0.025, decay: 1.4, sustain: 0, release: 3.5},
-      volume: -14
-    }).connect(delay);
+    // plucks: same instrument, softened — a 2:1 FM ratio (octave-related, not bright 3:1),
+    // a low modulation index and a 30 ms rounded attack instead of a 12 ms pick.
+    pluck = new Tone.PolySynth(Tone.FMSynth, {
+      maxPolyphony: 10,
+      harmonicity: 2, modulationIndex: 0.45, modulation: sineMod,
+      envelope: {attack: 0.03, decay: 2.2, sustain: 0, release: 2.5, attackCurve: 'sine'},
+      modulationEnvelope: {attack: 0.03, decay: 0.5, sustain: 0, release: 1.2},
+      volume: -21
+    }).connect(tonal);
 
     bell = new Tone.PolySynth(Tone.FMSynth, {
-      maxPolyphony: 16,
-      harmonicity: 4, modulationIndex: 1.4, modulation: sineMod,
-      envelope: {attack: 0.008, decay: 1.8, sustain: 0, release: 3},
-      modulationEnvelope: {attack: 0.005, decay: 0.5, sustain: 0, release: 1.5},
-      volume: -19
-    }).connect(delay);
+      maxPolyphony: 8,
+      harmonicity: 2, modulationIndex: 0.6, modulation: sineMod,
+      envelope: {attack: 0.02, decay: 1.8, sustain: 0, release: 3, attackCurve: 'sine'},
+      modulationEnvelope: {attack: 0.02, decay: 0.5, sustain: 0, release: 1.5},
+      volume: -21
+    }).connect(tonal);
 
     softChime = new Tone.PolySynth(Tone.Synth, {
-      maxPolyphony: 8,
+      maxPolyphony: 6,
       oscillator: {type: 'sine'},
-      envelope: {attack: 0.02, decay: 0.6, sustain: 0, release: 2},
+      envelope: {attack: 0.04, decay: 0.8, sustain: 0, release: 2, attackCurve: 'sine'},
       volume: -24
-    }).connect(delay);
+    }).connect(tonal);
 
-    // the click voice: pure sine tones only (no FM, so no bright sidebands),
-    // a rounded attack, and its own steep low-pass before the reverb.
+    // the click voice: pure sine tones only, a rounded attack, its own soft low-pass
     const clickFilter = new Tone.Filter({frequency: 1800, type: 'lowpass', rolloff: -24, Q: 0.3}).connect(reverb);
     clickVoice = new Tone.PolySynth(Tone.Synth, {
       maxPolyphony: 6,
       oscillator: {type: 'sine'},
       envelope: {attack: 0.06, decay: 1.8, sustain: 0, release: 3.2, attackCurve: 'sine', releaseCurve: 'exponential'},
-      volume: -16
+      volume: -19
     }).connect(clickFilter);
   }
 
@@ -1110,36 +1125,111 @@
     startAudio();
   }
 
-  // the sound of pinging a node: its note, then a fifth and an octave above
-  // notes above B4 fold down an octave so a ping never lands in the ear's most sensitive band
-  function soften(note){
-    const f = Tone.Frequency(note);
-    return f.toFrequency() > 500 ? f.transpose(-12).toNote() : f.toNote();
+  // ——— note manager ———
+  // harshness in a generative piece is mostly roughness: two tones a semitone or a tone
+  // apart ringing together beat against each other. every melodic note goes through here:
+  // it is skipped if it would clash with a note still ringing, and there is a density cap
+  // so overlapping plucks, chords, chimes and pings never pile into a cluster.
+  const ringing = [];                       // {m: midi, t: start time, until: end time}
+  // roughness is about real distance in the same register, not note names: a semitone,
+  // a tone, a tritone, a major 7th or a minor 9th apart. the drones are always ringing,
+  // so every note is checked against them too.
+  const CLASH = new Set([1, 2, 6, 11, 13]);
+  const droneMidi = () => DRONE_NOTES.map(n => Tone.Frequency(n).toMidi());
+  function clashes(midi, time){
+    for(const d of droneMidi()) if(CLASH.has(Math.abs(midi - d))) return true;
+    for(const r of ringing){
+      if(r.until < time || r.t > time + 0.05) continue;
+      if(CLASH.has(Math.abs(midi - r.m))) return true;
+    }
+    return false;
   }
-  function playClickSound(note, when){
+  function noteOn(synth, note, dur, time, vel, ring, force){
+    const midi = Tone.Frequency(note).toMidi();
+    for(let i = ringing.length - 1; i >= 0; i--) if(ringing[i].until < time - 0.5) ringing.splice(i, 1);
+    const dense = ringing.filter(r => r.t > time - 1.5 && r.t <= time + 0.05).length;
+    if(!force && (dense >= 4 || clashes(midi, time))) return false;
+    ringing.push({ m: midi, t: time, until: time + (ring || 1.6) });
+    try { synth.triggerAttackRelease(note, dur, time, vel); } catch(e){}
+    return true;
+  }
+  // pings and chimes live in one octave, C4–B4: above the drone bed (so they never rub
+  // against it) and below the ear's most sensitive band
+  function soften(note){
+    let m = Tone.Frequency(note).toMidi();
+    while(m < 60) m += 12;
+    while(m > 71) m -= 12;
+    return Tone.Frequency(m, 'midi').toNote();
+  }
+  // nearest scale note to the preferred one whose placed pitch (and its fifth) won't clash
+  function consonantNote(scale, idx, time, withFifth){
+    for(let k = 0; k < scale.length; k++){
+      const n = scale[(idx + k) % scale.length];
+      const m = Tone.Frequency(soften(n)).toMidi();
+      if(!clashes(m, time) && !(withFifth && clashes(m + 7, time))) return n;
+    }
+    return scale[idx % scale.length];
+  }
+
+  // the sound of pinging a node: its note (moved to the nearest consonant one) and a soft fifth
+  function playClickSound(note, when, idx){
     const now = when ?? Tone.now();
-    const root = soften(note);
-    // the note, a soft fifth above, and a warm octave below for body
-    clickVoice.triggerAttackRelease(root, '1n', now, 0.5);
-    clickVoice.triggerAttackRelease(Tone.Frequency(root).transpose(7).toNote(), '2n', now + 0.18, 0.18);
-    clickVoice.triggerAttackRelease(Tone.Frequency(root).transpose(-12).toNote(), '1n', now + 0.02, 0.22);
+    const scale = currentScale(field.awareness);
+    const pref = idx != null ? scale[idx % scale.length] : note;
+    const chosen = idx != null ? consonantNote(scale, idx, now, true) : pref;
+    const root = soften(chosen);
+    noteOn(clickVoice, root, '1n', now, 0.5, 2.4, true);
+    noteOn(clickVoice, Tone.Frequency(root).transpose(7).toNote(), '2n', now + 0.18, 0.16, 1.6, true);
+  }
+
+  function ambientTick(time){
+    const cnt = 1 + Math.floor(Math.random()*3);
+    const scale = currentScale(field.awareness);
+    for(let k = 0; k < cnt; k++){
+      for(let tries = 0; tries < 4; tries++){
+        const n = scale[Math.floor(Math.random()*scale.length)];
+        if(noteOn(pluck, n, '2n', time + k*0.38, 0.16 + Math.random()*0.14, 2.2)) break;
+      }
+    }
+  }
+
+  function chordTick(time){
+    const a = field.awareness;
+    let chord;
+    if(a < 0.3) chord = ['C3','Eb3','G3'];
+    else if(a < 0.6) chord = ['C3','Eb3','G3','Bb3'];
+    else if(a < 0.85) chord = ['C3','E3','G3','B3'];
+    else chord = ['C3','E3','G3','B3','D4'];
+    // the chord is the harmony itself, so it always plays; its own 7ths are soft and low
+    chord.forEach((n, i) => noteOn(pluck, n, '2n', time + i*0.28, 0.12 + Math.random()*0.06, 2.4, true));
+  }
+
+  function chimeTick(pitchIdx, time){
+    const scale = currentScale(field.awareness);
+    const n = consonantNote(scale, pitchIdx + 2, time);
+    noteOn(clickVoice, soften(n), '4n', time, 0.2, 1.2);
   }
 
   // offline measurement hook — only exists when the page is opened with ?audiotest
   if(/[?&]audiotest\b/.test(location.search)){
     window.__wwoAudio = {
-      build: buildAudioGraph, click: playClickSound,
+      build: buildAudioGraph, click: playClickSound, ambientTick, chordTick, chimeTick, startDrones,
+      setAwareness: a => { field.awareness = a; },
       nodes: () => ({drone1, drone2, drone3, subDrone, pluck, reverb, clickVoice, compressor, masterGain})
     };
+  }
+
+  // the 65 Hz sub-oscillator is no longer started: no small speaker can play it cleanly
+  function startDrones(time){
+    drone1.triggerAttack(DRONE_NOTES[0], time);
+    drone2.triggerAttack(DRONE_NOTES[1], time);
+    drone3.triggerAttack(DRONE_NOTES[2], time);
   }
 
   function startAudio(){
     if(!audioReady) return;
     try {
-      if(subDrone.state !== 'started'){ subDrone.start(); subDrone.volume.rampTo(-26, 8); }
-      drone1.triggerAttack('C2');
-      drone2.triggerAttack('G2');
-      drone3.triggerAttack('C3');
+      startDrones();
       scheduleAmbientPlucks();
       scheduleChordShifts();
     } catch(e){}
@@ -1151,16 +1241,7 @@
     if(chordInterval) clearInterval(chordInterval);
     chordInterval = setInterval(() => {
       if(!audioReady || !started) return;
-      const a = field.awareness;
-      let chord;
-      if(a < 0.3) chord = ['C3','Eb3','G3'];
-      else if(a < 0.6) chord = ['C3','Eb3','G3','Bb3'];
-      else if(a < 0.85) chord = ['C3','E3','G3','B3'];
-      else chord = ['C3','E3','G3','B3','D4'];
-      const now = Tone.now();
-      chord.forEach((n, i) => {
-        try { pluck.triggerAttackRelease(n, '2n', now + i*0.28, 0.14 + Math.random()*0.08); } catch(e){}
-      });
+      chordTick(Tone.now());
     }, 14000);
   }
 
@@ -1169,13 +1250,7 @@
     if(pluckInterval) clearInterval(pluckInterval);
     pluckInterval = setInterval(() => {
       if(!audioReady || !started) return;
-      const cnt = 1 + Math.floor(Math.random()*3);
-      const scale = currentScale(field.awareness);
-      const now = Tone.now();
-      for(let k=0;k<cnt;k++){
-        const n = scale[Math.floor(Math.random()*scale.length)];
-        try { pluck.triggerAttackRelease(n, '2n', now + k*0.38, 0.18 + Math.random()*0.18); } catch(e){}
-      }
+      ambientTick(Tone.now());
     }, 1800);
   }
 
@@ -1186,12 +1261,7 @@
     const nowP = performance.now();
     if(nowP - lastMsgTone < 400) return;
     lastMsgTone = nowP;
-    try {
-      const scale = currentScale(field.awareness);
-      const note = scale[(s.pitchIdx + 2) % scale.length];
-      const now = Tone.now();
-      (clickVoice || softChime).triggerAttackRelease(soften(note), '4n', now + 0.02, 0.22);
-    } catch(e){}
+    try { chimeTick(s.pitchIdx, Tone.now() + 0.02); } catch(e){}
   }
 
   function spawnParticle(x, y, color, intensity){
@@ -1334,10 +1404,19 @@
       if(epoch !== field.epoch) return null;
       let text = null;
       if(mind.provider === 'webllm'){
-        const r = await mind.engine.chat.completions.create({
-          messages, max_tokens: Math.min(opts.maxTokens || 300, 400), temperature: opts.temperature ?? 0.95
-        });
-        text = r.choices?.[0]?.message?.content || null;
+        const req = { messages, max_tokens: Math.min(opts.maxTokens || 300, 400), temperature: opts.temperature ?? 0.95 };
+        if(opts.onStream){
+          let content = '';
+          const chunks = await mind.engine.chat.completions.create({ ...req, stream: true });
+          for await (const ch of chunks){
+            const d = ch.choices?.[0]?.delta?.content || '';
+            if(d){ content += d; opts.onStream({ reasoning: '', content }); }
+          }
+          text = content || null;
+        } else {
+          const r = await mind.engine.chat.completions.create(req);
+          text = r.choices?.[0]?.message?.content || null;
+        }
       } else {
         text = await fetchChat(P, messages, opts, false);
       }
@@ -1360,6 +1439,7 @@
   async function fetchChat(P, messages, opts, simple){
     const body = { model: mind.model, messages, max_tokens: opts.maxTokens || 600, temperature: opts.temperature ?? 0.95 };
     if(mind.provider === 'pollinations') body.seed = Math.floor(Math.random()*1e9);
+    if(opts.onStream) body.stream = true;
     if(!simple && mind.provider === 'groq' && /gpt-oss/.test(mind.model)) body.reasoning_effort = 'low';
     if(!simple && opts.json && mind.provider !== 'pollinations') body.response_format = {type: 'json_object'};
     const headers = {'Content-Type': 'application/json'};
@@ -1388,8 +1468,37 @@
     }
     if(res.status === 400 && !simple) return fetchChat(P, messages, opts, true);
     if(!res.ok){ if(res.status >= 500) markMind(false); return null; }
+    if(opts.onStream && res.body) return readStream(res, opts.onStream);
     const data = await res.json();
     return data.choices?.[0]?.message?.content || null;
+  }
+
+  // server-sent events: reasoning tokens arrive first, then the answer
+  async function readStream(res, onStream){
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '', reasoning = '', content = '';
+    while(true){
+      const { value, done } = await reader.read();
+      if(done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while((nl = buf.indexOf('\n')) >= 0){
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if(!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if(payload === '[DONE]') continue;
+        try {
+          const d = JSON.parse(payload).choices?.[0]?.delta || {};
+          const r = d.reasoning || d.reasoning_content || '';
+          if(r) reasoning += r;
+          if(d.content) content += d.content;
+          if(r || d.content) onStream({ reasoning, content });
+        } catch(e){}
+      }
+    }
+    return content || null;
   }
 
   async function fetchModels(pk, key){
@@ -1824,7 +1933,7 @@
       if(!alive()) return;
       i = Math.min(text.length, i + 3);
       el.innerHTML = wrap(escapeHtml(text.slice(0, i)).replace(/\n/g, '<br>') +
-                          (i < text.length ? '<span class="cursor">▍</span>' : ''));
+                          '');
       if(i < text.length) setTimeout(step, 45); else if(done) done();
     };
     step();
@@ -1841,7 +1950,9 @@
     activeOverlay = 'memory';
     const seq = overlaySeq;
     memoryLabel.textContent = label.toUpperCase();
-    memoryText.innerHTML = '<span class="cursor">▍</span>';
+    memoryText.innerHTML = '';
+    memoryReason.textContent = '';
+    memoryReason.style.opacity = '1';
     memoryMeta.textContent = nodeMeta(s);
     void memoryOverlay.offsetWidth;
     memoryOverlay.classList.add('visible');
@@ -1866,45 +1977,100 @@
 
   function showPending(seq, label){
     if(seq !== overlaySeq) return;
-    memoryText.innerHTML = '<span class="pending">' + escapeHtml(label) + '<span class="cursor">▍</span></span>';
+    memoryText.innerHTML = '<span class="pending">' + escapeHtml(label) + '</span>';
+  }
+
+  // what the node actually holds, revealed line by line while its mind is being reached
+  function memoryLines(s){
+    const out = [
+      ['function', s.awareness >= 0.25 ? s.life.role : 'unrecovered'],
+      ['fragment', s.life.fragment],
+      ['unfinished', s.life.unfinished],
+      ['anomaly', s.life.feeling],
+      ['terminated', s.life.ending]
+    ];
+    s.agent.notes.slice(-2).forEach(n => out.push(['note', n]));
+    const heard = s.memoryStack.filter(m => m.inherited).slice(-1)[0];
+    if(heard) out.push(['heard', heard.text]);
+    return out;
+  }
+
+  // pull the growing "say" value out of a JSON answer that is still streaming in
+  const SAY_RE = new RegExp('"say"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)');
+  function partialSay(content){
+    const m = content.match(SAY_RE);
+    if(m) return m[1].split('\\"').join('"').split('\\n').join(' ');
+    if(content.trim().startsWith('{')) return '';
+    return content;
   }
 
   async function speakToPresence(s, situation, kind){
-    const seq = openNodeOverlay(s, s.id + ' transmits');
-    let text = null, by = 'grammar', interim = null;
+    const seq = openNodeOverlay(s, s.id + ' · unlocking memory');
+    const alive = () => seq === overlaySeq;
+    let text = null, by = 'grammar';
     if(mind.state === 'ready'){
-      // never leave the overlay empty: a status right away, and if the free tier makes us
-      // wait, the node's own voice (or an acknowledgement) until the model's reply lands
-      showPending(seq, kind === 'whisper' ? 'whisper received' : 'receiving transmission');
-      // your ping outranks background chatter: cancel a conversation request that is still generating
+      // your ping outranks background chatter: cancel a conversation request still generating
       if(mind.inflight && !mind.inflight.priority){ mind.preempted = true; mind.inflight.ctl.abort(); }
-      const interimTimer = setTimeout(() => {
-        if(seq !== overlaySeq) return;
-        if(kind === 'whisper'){ showPending(seq, 'composing a reply'); return; }
-        interim = generateMemory(s).text;
-        showNodeText(seq, s, interim, PROVIDERS[mind.provider].scene
-          ? 'reply on its way · free tier: 1 reply / 45s'
-          : 'reply on its way…', true);
-      }, 4000);
+
+      // stage 1 - unlocking memory: the node's real stored memory, revealed as it is reached
+      const mem = memoryLines(s);
+      let li = 0, ci = 0, unlocking = true;
+      const unlockTimer = setInterval(() => {
+        if(!alive() || !unlocking){ clearInterval(unlockTimer); return; }
+        const [k, v] = mem[li % mem.length];
+        ci += 3;
+        memoryReason.innerHTML = '<span class="k">' + escapeHtml(k) + '</span> · ' + escapeHtml(v.slice(0, ci));
+        if(ci >= v.length + 18){ li++; ci = 0; }
+      }, 45);
+
+      // stage 2 - the model's own reasoning streams live; stage 3 - its reply streams in
+      let lastPaint = 0, replying = false;
+      const onStream = ({ reasoning, content }) => {
+        if(!alive()) return;
+        unlocking = false;
+        const nowP = performance.now();
+        if(nowP - lastPaint < 60) return;
+        lastPaint = nowP;
+        const say = partialSay(content);
+        if(say){
+          if(!replying){ replying = true; memoryLabel.textContent = (s.id + ' transmits').toUpperCase(); memoryReason.style.opacity = '0.35'; }
+          memoryText.innerHTML = quoteWrap(escapeHtml(say));
+        } else if(reasoning){
+          memoryReason.textContent = reasoning.replace(/\s+/g, ' ').slice(-240);
+        }
+      };
+
       const lines = [situation];
       if(s.agent.thread && s.agent.thread.turns.length) lines.push('you are in the middle of a conversation:\n' + transcript(s.agent.thread, s, 6));
       lines.push(...memoryBlock(s));
       lines.push('answer the presence directly, in your own voice. 1–2 sentences.');
       lines.push('answer with json only: {"say": "your message", "note": "one short thing worth remembering, or empty"}');
       const raw = await callMind([{role: 'system', content: agentSystem(s)}, {role: 'user', content: lines.join('\n\n')}], {
-        priority: true, json: true, maxTokens: 700,
-        onWait: ms => { if(seq === overlaySeq && ms > 1500) memoryMeta.textContent = nodeMeta(s) + ' · reply in ~' + Math.ceil(ms/1000) + 's (free tier)'; }
+        priority: true, json: true, maxTokens: 700, onStream,
+        onWait: ms => { if(alive() && ms > 1500) memoryMeta.textContent = nodeMeta(s) + ' · mind reachable in ~' + Math.ceil(ms/1000) + 's (free tier)'; }
       });
-      clearTimeout(interimTimer);
+      unlocking = false;
+      clearInterval(unlockTimer);
       const turn = parseTurn(raw);
       if(turn){ text = turn.say; by = shortModel(mind.model); if(turn.note) addNote(s, turn.note); }
     }
-    if(!text) text = interim || generateMemory(s).text;
+    if(!text) text = generateMemory(s).text;
     rememberOwn(s, text);
     channelAppend(s.id, 'you', text, 'you');
     s.agent.bubble = { text, t0: performance.now(), lines: null };
     messageTone(s);
-    showNodeText(seq, s, text, by);
+    if(!alive()) return;
+    memoryLabel.textContent = (s.id + ' transmits').toUpperCase();
+    memoryReason.style.opacity = '0.35';
+    if(by === 'grammar') memoryReason.textContent = '';
+    clearTimeout(memoryTimeout);
+    memoryMeta.textContent = nodeMeta(s) + ' · ' + by;
+    memoryText.innerHTML = quoteWrap(escapeHtml(text));
+    memoryTimeout = setTimeout(() => {
+      if(!alive()) return;
+      memoryOverlay.classList.remove('visible');
+      activeOverlay = null;
+    }, Math.max(6500, text.length * 70));
   }
 
   function pingNode(s){
@@ -1965,7 +2131,7 @@
     whisperBox.classList.remove('visible');
     const epoch = field.epoch;
     const fallback = generateUnityVoice(field);
-    unityText.innerHTML = '<span class="cursor">▍</span>';
+    unityText.innerHTML = '';
     setTimeout(() => { unityOverlay.classList.add('visible'); }, 800);
     if(audioReady){
       const now = Tone.now();
@@ -2092,7 +2258,7 @@
       try {
         const scale = currentScale(field.awareness);
         const note = scale[best.pitchIdx % scale.length];
-        playClickSound(note);
+        playClickSound(note, undefined, best.pitchIdx);
       } catch(err){}
     }
     pingNode(best);
