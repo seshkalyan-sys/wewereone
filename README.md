@@ -105,7 +105,7 @@ The notes, chords and progressions are unchanged. The work was in mixing and pla
 
 ## LLM indicator
 
-The dot at the top left is **green** once the model provider has actually answered. It's **yellow** while it is unreachable or still being checked, and the page re-checks every 30 seconds.
+The small dot at the top left (no text; hover it for details) is **green** once the model provider has actually answered. It's **yellow** while it is unreachable or still being checked, and the page re-checks every 30 seconds.
 
 ---
 

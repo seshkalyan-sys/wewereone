@@ -321,7 +321,7 @@
 
   .llm-dot {
     position:absolute; top: 15px; left: 24px; z-index: 40;
-    display:flex; align-items:center; gap: 8px; pointer-events: none;
+    display:flex; align-items:center;
     font-family: 'Courier New', monospace; font-size: 9px; letter-spacing: 0.3em;
     color: rgba(225,230,255,0.62); text-transform: uppercase;
   }
@@ -356,7 +356,7 @@
   <div class="letterbox" style="top:0; height:42px;"></div>
   <div class="letterbox" style="bottom:0; height:42px;"></div>
 
-  <div class="llm-dot" id="llmDot"><i></i><span id="llmDotText">LLM · CHECKING</span></div>
+  <div class="llm-dot" id="llmDot" role="status" aria-label="LLM: checking" title="LLM: checking"><i></i></div>
 
   <div class="gate" id="gate">
     <div class="gate-inner">
@@ -466,7 +466,7 @@
   const channel = $('channel'), channelLines = $('channelLines');
   const whisperBox = $('whisper'), whisperTo = $('whisperTo'), whisperInput = $('whisperInput');
   const nodeTip = $('nodeTip');
-  const llmDot = $('llmDot'), llmDotText = $('llmDotText');
+  const llmDot = $('llmDot');
 
   let started = false;
 
@@ -1273,7 +1273,8 @@
     if(k === dotKey) return;
     dotKey = k;
     llmDot.classList.toggle('on', on);
-    llmDotText.textContent = label;
+    llmDot.title = label;                       // no visible text — just the dot; hover/screen readers get the state
+    llmDot.setAttribute('aria-label', label);
   }
   function markMind(ok){ mind.ok = ok; updateDot(); }
 
