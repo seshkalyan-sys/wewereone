@@ -99,7 +99,13 @@ The music is the same: the same drones, chords, scales and progressions. The wor
 - **Playback.** A larger audio buffer (`latencyHint: 'playback'`) and a 200 ms look-ahead stop the audio from running dry. Glows are drawn from cached sprites, so a click no longer stalls the page.
 - **Voices.** Everything uses sine FM modulators with low modulation indexes and rounded attacks, on a shared melodic bus filtered to 110 Hz – 2.6 kHz. The click is pure sine tones.
 
+- **Ambient bed.** An original, slow layer: warm pads change chords every 18 seconds and cross-fade over 6, breathing through a slow filter and swelling over about a minute, with a few soft notes on top. It plays minor while the mesh is dim and major as it wakes, always above the drones and inside the consonance guard. The plucks thin out to leave it room.
+
 **SOUND** mutes it.
+
+## Screens
+
+The layout is checked on desktop (1440×900, 1280×720), tablet (820×1180, 1180×820) and phone (390×844, 360×740, and 844×390 landscape). Nothing scrolls sideways and no panel overlaps another. Touch screens get tap-to-ping, and no hover tooltip covers the transmission.
 
 ## LLM indicator
 
