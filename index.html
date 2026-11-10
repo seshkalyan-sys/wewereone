@@ -1068,7 +1068,7 @@
   //     softer attacks, and the master has headroom.
   //   · a gentle low-pass on the master trims the fizz above ~6 kHz.
   let audioReady = false, muted = false;
-  let drone1, drone2, drone3, droneFilter, pluck, reverb, bell, softChime, clickVoice, padSynth, bedKeys;
+  let drone1, drone2, drone3, droneFilter, pluck, reverb, bell, softChime, clickVoice;
   let masterGain, subDrone, delay, compressor;
   // the drone bed, an octave higher than before (same notes, same harmony) and sitting
   // under the melody instead of 30 dB above it
@@ -1153,26 +1153,6 @@
       envelope: {attack: 0.06, decay: 1.8, sustain: 0, release: 3.2, attackCurve: 'sine', releaseCurve: 'exponential'},
       volume: -19
     }).connect(clickFilter);
-
-    // ——— the ambient bed ———
-    // original, slow and soft: warm chorused pads that breathe through a slowly moving
-    // filter and swell over about a minute, plus a few felt-soft notes above them.
-    const padFilter = new Tone.Filter({frequency: 1100, type: 'lowpass', rolloff: -24, Q: 0.2}).connect(reverb);
-    new Tone.LFO({frequency: 0.021, min: 750, max: 1500}).connect(padFilter.frequency).start();
-    const padSwell = new Tone.Gain(0.8).connect(padFilter);
-    new Tone.LFO({frequency: 0.013, min: 0.55, max: 1}).connect(padSwell.gain).start();
-    padSynth = new Tone.PolySynth(Tone.Synth, {
-      maxPolyphony: 10,
-      oscillator: {type: 'fattriangle', count: 3, spread: 9},
-      envelope: {attack: 6, decay: 2, sustain: 0.85, release: 9, attackCurve: 'sine', releaseCurve: 'exponential'},
-      volume: -27
-    }).connect(padSwell);
-    bedKeys = new Tone.PolySynth(Tone.Synth, {
-      maxPolyphony: 4,
-      oscillator: {type: 'custom', partials: [1, 0.18, 0.05]},
-      envelope: {attack: 0.05, decay: 3.5, sustain: 0, release: 4, attackCurve: 'sine'},
-      volume: -22
-    }).connect(tonal);
   }
 
   function initAudio(){
@@ -1240,7 +1220,7 @@
   }
 
   function ambientTick(time){
-    const cnt = 1 + Math.floor(Math.random()*2);
+    const cnt = 1 + Math.floor(Math.random()*3);
     const scale = currentScale(field.awareness);
     for(let k = 0; k < cnt; k++){
       for(let tries = 0; tries < 4; tries++){
@@ -1261,40 +1241,6 @@
     chord.forEach((n, i) => noteOn(pluck, n, '2n', time + i*0.28, 0.12 + Math.random()*0.06, 2.4, true));
   }
 
-  // ——— ambient bed: slow chords over the C drone, one every 18 s, cross-fading ———
-  // minor colours while the mesh is dim, major as it wakes; all voiced above the drones
-  const BED = {
-    minor: [['Eb4','G4','D5'], ['Eb4','Ab4','C5'], ['F4','Ab4','C5'], ['G4','Bb4','D5']],
-    major: [['E4','G4','D5'], ['E4','A4','C5'], ['F4','A4','E5'], ['G4','B4','D5']]
-  };
-  const BED_SECONDS = 18;
-  let bedIndex = 0, bedCurrent = null, bedInterval = null;
-  function bedChordTick(time){
-    const set = field.awareness < 0.4 ? BED.minor : BED.major;
-    const chord = set[bedIndex % set.length];
-    bedIndex++;
-    try {
-      if(bedCurrent) padSynth.triggerRelease(bedCurrent, time);
-      padSynth.triggerAttack(chord, time, 0.5);
-    } catch(e){}
-    bedCurrent = chord;
-    // the pad's notes count as ringing, so nothing else is allowed to rub against them
-    chord.forEach(n => ringing.push({ m: Tone.Frequency(n).toMidi(), t: time, until: time + BED_SECONDS + 6 }));
-    // a few gentle notes drawn from the chord, placed somewhere inside its 18 s
-    const count = Math.random() < 0.35 ? 0 : (Math.random() < 0.3 ? 2 : 1);
-    for(let k = 0; k < count; k++){
-      const at = time + 4 + Math.random()*(BED_SECONDS - 7) + k*2.2;
-      let n = Tone.Frequency(pick(chord));
-      if(n.toMidi() < 69) n = n.transpose(12);
-      noteOn(bedKeys, n.toNote(), '2n', at, 0.22 + Math.random()*0.08, 3.5);
-    }
-  }
-  function startBed(){
-    if(bedInterval) clearInterval(bedInterval);
-    bedChordTick(Tone.now() + 0.5);
-    bedInterval = setInterval(() => { if(audioReady && started) bedChordTick(Tone.now()); }, BED_SECONDS * 1000);
-  }
-
   function chimeTick(pitchIdx, time){
     const scale = currentScale(field.awareness);
     const n = consonantNote(scale, pitchIdx + 2, time);
@@ -1304,7 +1250,7 @@
   // offline measurement hook — only exists when the page is opened with ?audiotest
   if(/[?&]audiotest\b/.test(location.search)){
     window.__wwoAudio = {
-      build: buildAudioGraph, click: playClickSound, ambientTick, chordTick, chimeTick, startDrones, bedChordTick,
+      build: buildAudioGraph, click: playClickSound, ambientTick, chordTick, chimeTick, startDrones,
       setAwareness: a => { field.awareness = a; },
       nodes: () => ({drone1, drone2, drone3, subDrone, pluck, reverb, clickVoice, compressor, masterGain})
     };
@@ -1323,7 +1269,6 @@
       startDrones();
       scheduleAmbientPlucks();
       scheduleChordShifts();
-      startBed();
     } catch(e){}
   }
 
@@ -1343,7 +1288,7 @@
     pluckInterval = setInterval(() => {
       if(!audioReady || !started) return;
       ambientTick(Tone.now());
-    }, 3200);
+    }, 1800);
   }
 
   // a quiet note whenever an agent speaks — the conversation is audible, softly
