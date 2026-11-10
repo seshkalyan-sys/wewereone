@@ -60,12 +60,54 @@ Deep consensus can close by offering back a memory that no longer belongs to any
 
 ---
 
+## The nodes talk to each other
+
+Every node is an **agent**: an id, a region, a temperament, a past (what it used to be, what it never finished computing), and a small memory of its own.
+
+Left alone, agents find a nearby agent and start a conversation about **whatever they want**. Nobody scripts the topics. Each agent decides on its own turn whether to keep going, end the conversation, or pull another agent in. When a conversation ends, both agents keep a note of it, and those notes go with them into their next conversations. Ideas travel across the mesh one conversation at a time.
+
+You can watch it happen:
+- dashed currents connect agents who are talking, and their words float beside them
+- packets travel along the links
+- the **MESH CHANNEL** (bottom left) is a live transcript
+
+**Ping** a node and it speaks to you. **Whisper** to it and it answers. It may also carry what you said into its later conversations.
+
+The final transmission is written from what the agents actually discussed.
+
+## The mind: free, open-weight models
+
+Press **MIND · MODEL** to choose. Every option is free and serves open-weight models:
+
+| provider | key | models | pace |
+|---|---|---|---|
+| **Pollinations** (default) | none | GPT-OSS 20B | 1 reply per 45s per visitor, so each call drafts a whole exchange between two agents |
+| **Groq** (recommended) | free, [console.groq.com/keys](https://console.groq.com/keys) | gpt-oss-20b / 120b, qwen | about 30 req/min; every agent thinks for itself, turn by turn |
+| **Cerebras** | free, [cloud.cerebras.ai](https://cloud.cerebras.ai/) | gpt-oss-120b, qwen, llama | about 30 req/min |
+| **OpenRouter** | free, [openrouter.ai/keys](https://openrouter.ai/keys) | `:free` models (gemma, nemotron…) | limited requests per day |
+| **In your browser** | none | Llama 3.2 1B, Qwen 2.5 0.5B, SmolLM2 1.7B via [WebLLM](https://github.com/mlc-ai/web-llm) | unlimited; needs WebGPU and a one-time model download |
+
+Keys are stored only in your own browser (`localStorage`) and are sent only to the provider they belong to.
+If no mind is reachable, the mesh falls back to its original grammar and keeps talking.
+
+## Sound
+
+Same instruments, notes and progressions, with the noise removed:
+- every FM voice now uses a sine modulator (Tone.js defaults to a buzzy square wave)
+- the 32 Hz sub that small speakers turned into rumble is now an octave up and quiet, and a 50 Hz high-pass removes the rest
+- the click voice is about 12 dB softer and has gentler attacks
+- the master has headroom and a soft 6 kHz low-pass
+
+**SOUND** mutes it.
+
+---
+
 ## How to enter
 
 1. Press **CONNECT**
 2. Move across the network
-3. Ping a node. Read what it transmits.
-4. Ping another.
+3. Ping a node. Read what it transmits. Whisper back.
+4. Watch the agents talk among themselves in the channel.
 5. Watch CONSENSUS rise.
 6. Stay until the mesh speaks.
 
