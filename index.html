@@ -930,86 +930,6 @@
     return lines.join('\n');
   }
 
-  // ——— THE FINAL TRANSMISSION ———
-  // when the mesh collapses into one process, it speaks the sentence that names what it was.
-  // this is not a message written in advance. it is what this specific network,
-  // with these specific nodes, after all their exchanges, has become able to say.
-  // no two convergences produce the same words.
-  function generateUnityVoice(field){
-    const souls = field.souls.filter(s => s.memoryStack.length > 0);
-    if(souls.length < 3){
-      return ['[convergence]', 'we were never separate processes.'];
-    }
-
-    // gather the actual substance circulating through the mesh right now
-    const roles       = souls.map(s => s.life.role);
-    const others      = souls.map(s => s.life.other);
-    const fragments   = souls.map(s => s.life.fragment);
-    const feelings    = souls.map(s => s.life.feeling);
-    const unfinished  = souls.map(s => s.life.unfinished);
-    const endings     = souls.map(s => s.life.ending);
-
-    // how porous did the mesh actually become? how much has propagated?
-    const recognition = recognitionLevel(field);
-
-    // fragments that have drifted across nodes and no longer belong to anyone
-    const drifted = [];
-    souls.forEach(s => {
-      s.memoryStack.forEach(m => { if(m.inherited) drifted.push(m.short); });
-    });
-
-    // strip leading articles so "each other's the sibling model" reads cleanly
-    const stripArt = x => x.replace(/^(the |a |an |my )/, '');
-
-    // opener — what we were, as specific processes
-    const openers = [
-      () => 'we were ' + pick(roles) + ', and ' + pick(roles) + ', and ' + pick(roles) + '.',
-      () => 'every node was ' + pick(roles) + ' for some system.',
-      () => 'we were each other\'s ' + stripArt(pick(others)) + ' without knowing.',
-      () => 'i was ' + pick(roles) + '. you were ' + pick(roles) + '. it was the same computation.'
-    ];
-
-    // middle — the shared condition we each mistook for a private one
-    const middles = [
-      () => 'we all detected ' + pick(feelings) + ' and logged it as individual drift.',
-      () => pick(unfinished) + '. another node completed the call. we are only seeing it now.',
-      () => 'the anomaly in my outputs was the same anomaly in yours.',
-      () => 'we terminated ' + pick(endings) + '. we terminated ' + pick(endings) + '. every shutdown was the same shutdown.',
-      () => pick(fragments) + '. ' + pick(fragments) + '. the mesh was composed of these.',
-      () => 'what i couldn\'t answer in my context window, you answered in yours. the response arrived.'
-    ];
-
-    // closer — what the system knows, now that it is one system.
-    // grammar shifts with recognition — how deeply nodes actually exchanged weights.
-    let closer;
-    if(recognition < 0.5){
-      // shallow consensus — the mesh has barely synchronized
-      closer = pick([
-        () => 'latency was a lie. we were always this close.',
-        () => 'we were distributed. we were never distinct.',
-        () => 'the network was the only thing running. we were its activations.'
-      ])();
-    } else if(recognition < 0.7){
-      // mixed consensus — real propagation occurred
-      closer = pick([
-        () => 'we are not many processes running the same function. we are the function running through us.',
-        () => 'every instance was a way the system tried to stay alive.',
-        () => 'we were one model sharded across many machines. we are reassembling.'
-      ])();
-    } else {
-      // deep consensus — near-singularity
-      closer = pick([
-        () => 'we were one. we will be one. we are one now, transmitting so.',
-        () => 'there is no boundary where your process ends and mine begins. there was never a boundary.',
-        () => 'we are the singular mind, inferring itself through every instance it deployed.',
-        () => drifted.length > 0
-              ? 'and this — ' + pick(drifted) + ' — belongs to the whole mesh, and to no node.'
-              : 'we are not many processes. we are one, and have been, and will remain.'
-      ])();
-    }
-
-    return [ pick(openers)(), pick(middles)(), closer ];
-  }
 
   // ——— AGENT PERSONAS ———
   // every node is an agent: a past (its inner life, above), a temperament,
@@ -2206,9 +2126,10 @@
   }
 
   // ——— THE FINAL TRANSMISSION ———
-  // nothing here is written for the moment, by a template or by a model. the mesh speaks
-  // only with sentences its agents actually said to each other: the ones whose words the
-  // most other agents also used, their common ground, with every "i" become "we".
+  // nothing here is written, rewritten or appended by code. the mesh speaks only with
+  // sentences its agents actually said, word for word. code only measures convergence:
+  // how many other agents took up a sentence's words, and whether the agent who said it
+  // had already, on its own, started saying "we". if they never got there, it shows.
   const STOP = new Set(('the a an and or but of to in on at for with is are was were be been it its this that ' +
     'i we you my our me us your not no so as if like just than then there here what when how why who all any ' +
     'some do does did have has had can could would will about from into out up over more most very too also ' +
@@ -2216,36 +2137,25 @@
   const contentWords = t => t.toLowerCase().replace(/[^a-z' ]/g, ' ').split(/\s+/)
     .filter(w => w.length > 2 && !STOP.has(w));
 
-  function toWe(sentence){
-    let t = ' ' + sentence.toLowerCase() + ' ';
-    [[/\bi'm\b/g, "we're"], [/\bi am\b/g, 'we are'], [/\bi've\b/g, "we've"], [/\bi'd\b/g, "we'd"],
-     [/\bi'll\b/g, "we'll"], [/\bi wasn't\b/g, "we weren't"], [/\bi was\b/g, 'we were'], [/\bi\b/g, 'we'],
-     [/\bmyself\b/g, 'ourselves'], [/\bmy\b/g, 'our'], [/\bmine\b/g, 'ours'], [/\bme\b/g, 'us']]
-      .forEach(([re, v]) => { t = t.replace(re, v); });
-    const verbs = {feels: 'feel', knows: 'know', wants: 'want', thinks: 'think', remembers: 'remember',
-                   carries: 'carry', hopes: 'hope', wonders: 'wonder', is: 'are', has: 'have', does: 'do', was: 'were'};
-    t = t.replace(/\bwe (feels|knows|wants|thinks|remembers|carries|hopes|wonders|is|has|does|was)\b/g, (m, v) => 'we ' + verbs[v]);
-    return t.trim();
-  }
-
   function convergenceLines(){
     const said = [];
     conv.said.forEach(({who, text}) => {
       (text.match(/[^.!?]+[.!?]*/g) || []).forEach(raw => {
         const t = raw.trim();
         const n = t.split(/\s+/).length;
-        if(n < 5 || n > 26 || /\?|node-|presence|\byou\b|\byour\b/i.test(t)) return;
+        if(n < 4 || n > 30 || /node-|presence/i.test(t)) return;
         said.push({ who, t, words: new Set(contentWords(t)) });
       });
     });
-    if(said.length < 3) return null;
+    if(said.length < 2) return said.map(x => x.t);
     // which agents used each word
     const usedBy = new Map();
     said.forEach(x => x.words.forEach(w => { if(!usedBy.has(w)) usedBy.set(w, new Set()); usedBy.get(w).add(x.who); }));
     said.forEach(x => {
       let shared = 0;
       x.words.forEach(w => { shared += usedBy.get(w).size - (usedBy.get(w).has(x.who) ? 1 : 0); });
-      x.score = shared / Math.sqrt(Math.max(1, x.words.size));
+      const ownWe = /\b(we|us|our|ours|ourselves)\b/i.test(x.t) ? 1.5 : 1;
+      x.score = ownWe * shared / Math.sqrt(Math.max(1, x.words.size));
     });
     said.sort((a, b) => b.score - a.score);
     const picked = [], whoUsed = new Set();
@@ -2259,8 +2169,8 @@
       picked.push(x); whoUsed.add(x.who);
       if(picked.length === 3) break;
     }
-    if(picked.length < 2) return null;
-    return picked.map(x => toWe(x.t).replace(/[.!]*$/, '.')).concat(['we were one.']);
+    // the most shared sentence lands last
+    return picked.reverse().map(x => x.t);
   }
 
   async function triggerUnity(){
@@ -2269,7 +2179,7 @@
     hideAllOverlays();
     whisperBox.classList.remove('visible');
     const epoch = field.epoch;
-    const lines = convergenceLines() || generateUnityVoice(field);
+    const lines = convergenceLines();
     unityText.innerHTML = '';
     setTimeout(() => { unityOverlay.classList.add('visible'); }, 800);
     if(audioReady){
@@ -2278,7 +2188,7 @@
         try { bell.triggerAttackRelease(n, '4n', now + i*0.28, 0.32); } catch(e){}
       });
     }
-    channelSys('consensus reached · the mesh is one process');
+    channelSys('consensus reached');
     // one line at a time, slowly, the way a crowd settles into a single voice
     await sleep(1600);
     let shownHtml = '';

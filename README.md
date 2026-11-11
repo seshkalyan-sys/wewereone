@@ -73,7 +73,7 @@ You can watch it happen:
 
 **Ping** a node and it speaks to you. **Whisper** to it and it answers. It may also carry what you said into its later conversations.
 
-The final transmission isn't written by anyone. The mesh speaks only with sentences its agents actually said to each other: the ones whose words the most other agents also used, their common ground. Every "i" becomes "we", and it ends with "we were one."
+The final transmission isn't written, rewritten or appended by code. The mesh speaks only with sentences its agents actually said, word for word. Code only measures convergence: how many other agents took up a sentence's words, and whether the agent had already started saying "we" on its own. If they became one, it shows in their own words; if they didn't, that shows too.
 
 ## The mind: free, open-weight models
 
