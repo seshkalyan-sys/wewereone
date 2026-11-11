@@ -419,6 +419,43 @@
     .memory-text { font-size: 12px; }
     .memory-reason { display: none; }
   }
+
+  /* ——— phone layout: status on top, nodes in the middle, conversation at the bottom ——— */
+  .controls .ico { display: none; }
+  .hud-mini { display: none; }
+  #muteBtn.off { opacity: 0.55; }
+  @media (max-width: 700px) {
+    .letterbox:first-of-type, .letterbox { height: 30px !important; }
+    .llm-dot { top: 11px; left: 16px; }
+    .hud { top: 40px; left: 16px; width: auto; right: 150px; }
+    .hud > *:not(.hud-mini) { display: none; }
+    .hud-mini { display: block; font-size: 9px; letter-spacing: 0.12em; color: rgba(220,230,255,0.6);
+      line-height: 1.5; text-transform: uppercase; }
+    .controls { top: 36px; right: 16px; flex-direction: row; gap: 8px; }
+    .controls button { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 15px;
+      letter-spacing: 0; display: flex; align-items: center; justify-content: center; }
+    .controls .lbl { display: none; }
+    .controls .ico { display: inline; font-family: Georgia, serif; }
+    .mind-panel { top: 84px; }
+    .channel { bottom: 96px; font-size: 9px; }
+    .channel-label { display: none; }
+    .channel-line { -webkit-line-clamp: 2; }
+    .channel-line .said { font-size: 12.5px; }
+    .channel-line:nth-last-child(n+3) { display: none; }
+    .whisper { bottom: 40px; }
+    .whisper-to { display: none; }
+    .whisper input { padding: 9px 14px; font-size: 14px; }
+    /* the transmission takes the conversation's place while it is showing — never mid-screen */
+    .memory-overlay { left: 16px; right: 16px; width: auto; bottom: 96px; max-height: 42vh; overflow: hidden;
+      padding: 10px 14px 8px; }
+    .memory-overlay.visible ~ .channel { opacity: 0; }
+    .memory-label { margin-bottom: 6px; }
+    .memory-text { font-size: 14px; }
+    .memory-reason { margin-bottom: 6px; max-height: 3.2em; }
+    .memory-meta { margin-top: 6px; }
+    .field-voice-overlay { top: 46%; }
+    .unity-text { font-size: clamp(22px, 6.4vw, 30px); }
+  }
 </style>
 </head>
 <body>
@@ -468,13 +505,14 @@
     <div class="hud-row"><span class="hud-label">CONSENSUS</span> <span class="hud-val" id="hudRecog">0.00</span></div>
     <div class="hud-bar"><div class="hud-bar-fill" id="recogBar" style="width:0%"></div></div>
     <div class="hud-phase" id="hudPhase">— idle —</div>
+    <div class="hud-mini" id="hudMini"></div>
     <div class="hud-row" style="margin-top:12px"><span class="hud-label">MIND</span> <span class="hud-val" id="hudMind">—</span></div>
   </div>
 
   <div class="controls" id="controls">
-    <button id="reset">RESTART MESH</button>
-    <button id="muteBtn">SOUND · ON</button>
-    <button id="mindBtn">MIND · MODEL</button>
+    <button id="reset" aria-label="restart mesh"><span class="lbl">RESTART MESH</span><span class="ico">↻</span></button>
+    <button id="muteBtn" aria-label="sound"><span class="lbl">SOUND · ON</span><span class="ico">♪</span></button>
+    <button id="mindBtn" aria-label="mind model"><span class="lbl">MIND · MODEL</span><span class="ico">◎</span></button>
   </div>
 
   <div class="mind-panel" id="mindPanel">
@@ -540,11 +578,13 @@
   const channel = $('channel'), channelLines = $('channelLines');
   const whisperBox = $('whisper'), whisperTo = $('whisperTo'), whisperInput = $('whisperInput');
   const nodeTip = $('nodeTip');
-  const llmDot = $('llmDot');
+  const llmDot = $('llmDot'), hudMini = $('hudMini');
 
   let started = false;
 
-  let W, H, DPR = window.devicePixelRatio || 1;
+  // touch devices: cap the canvas resolution so drawing never starves the audio thread
+  const IS_TOUCH = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || /[?&]mobiletest\b/.test(location.search);
+  let W, H, DPR = Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.25 : 2);
   let stars = [];
   function resize(){
     W = window.innerWidth;
@@ -1034,7 +1074,7 @@
   }
 
   const N = 120;
-  const conv = { threads: [], messages: 0, recentTopics: [] };
+  const conv = { threads: [], messages: 0, recentTopics: [], said: [] };
   let focusSoul = null;
   const particles = [];
   const packets = [];
@@ -1053,6 +1093,7 @@
     conv.threads = [];
     conv.messages = 0;
     conv.recentTopics = [];
+    conv.said = [];
     focusSoul = null;
     packets.length = 0;
     unityOverlay.classList.remove('visible');
@@ -1094,31 +1135,34 @@
     const loCut = new Tone.Filter({frequency: 100, type: 'highpass', rolloff: -12, Q: 0.5}).connect(hiCut);
     masterGain = new Tone.Gain(0).connect(loCut);
     masterGain.gain.rampTo(1.4, 4);                   // fade in, no start-up pop (level set for ~-14 dBFS peaks)
-    reverb = new Tone.Reverb({decay: 7, preDelay: 0.04, wet: 0.42}).connect(masterGain);
+    reverb = new Tone.Reverb({decay: IS_TOUCH ? 4.5 : 7, preDelay: 0.04, wet: 0.42}).connect(masterGain);
     delay = new Tone.FeedbackDelay({delayTime: '8n.', feedback: 0.16, wet: 0.12}).connect(reverb);
 
     subDrone = new Tone.Oscillator({frequency: 65.41, type: 'sine', volume: -60}).connect(masterGain);
-    droneFilter = new Tone.Filter({frequency: 700, type: 'lowpass', Q: 0.4}).connect(reverb);
+    // the drone breathes: a slow swell (about 22 s) instead of one unchanging held tone
+    const droneSwell = new Tone.Gain(1.25).connect(reverb);
+    new Tone.LFO({frequency: 0.045, min: 0.85, max: 1.6}).connect(droneSwell.gain).start();
+    droneFilter = new Tone.Filter({frequency: 700, type: 'lowpass', Q: 0.4}).connect(droneSwell);
     // the drone filter breathes very slowly — the room feels alive without anything new being played
     new Tone.LFO({frequency: 0.03, min: 480, max: 950}).connect(droneFilter.frequency).start();
 
     const sineMod = {type: 'sine'};
     drone1 = new Tone.FMSynth({
-      harmonicity: 1, modulationIndex: 0.8, modulation: sineMod,
+      harmonicity: 1, modulationIndex: 0.35, modulation: sineMod,
       envelope: {attack: 5, decay: 1, sustain: 0.9, release: 10},
       modulationEnvelope: {attack: 4, decay: 1, sustain: 0.7, release: 8},
       volume: DRONE_DB[0]
     }).connect(droneFilter);
 
     drone2 = new Tone.FMSynth({
-      harmonicity: 2, modulationIndex: 0.6, modulation: sineMod,
+      harmonicity: 2, modulationIndex: 0.3, modulation: sineMod,
       envelope: {attack: 6, decay: 1, sustain: 0.8, release: 11},
       modulationEnvelope: {attack: 5, decay: 1, sustain: 0.6, release: 9},
       volume: DRONE_DB[1]
     }).connect(droneFilter);
 
     drone3 = new Tone.FMSynth({
-      harmonicity: 3, modulationIndex: 0.4, modulation: sineMod,
+      harmonicity: 3, modulationIndex: 0.2, modulation: sineMod,
       envelope: {attack: 7, decay: 1, sustain: 0.7, release: 12},
       modulationEnvelope: {attack: 6, decay: 1, sustain: 0.5, release: 10},
       volume: DRONE_DB[2]
@@ -1156,12 +1200,12 @@
     }).connect(tonal);
 
     // the click voice: pure sine tones only, a rounded attack, its own soft low-pass
-    const clickFilter = new Tone.Filter({frequency: 1800, type: 'lowpass', rolloff: -24, Q: 0.3}).connect(reverb);
+    const clickFilter = new Tone.Filter({frequency: 2400, type: 'lowpass', rolloff: -24, Q: 0.3}).connect(reverb);
     clickVoice = new Tone.PolySynth(Tone.Synth, {
       maxPolyphony: 6,
-      oscillator: {type: 'sine'},
+      oscillator: {type: 'custom', partials: [1, 0.45, 0.2, 0.08]},
       envelope: {attack: 0.06, decay: 1.8, sustain: 0, release: 3.2, attackCurve: 'sine', releaseCurve: 'exponential'},
-      volume: -19
+      volume: -12
     }).connect(clickFilter);
   }
 
@@ -1833,6 +1877,8 @@
     if(th.epoch !== field.epoch) return;
     th.turns.push({ from: speaker, to: listener, text });
     conv.messages++;
+    conv.said.push({ who: speaker, text });
+    if(conv.said.length > 600) conv.said.shift();
     speaker.agent.bubble = { text, t0: performance.now(), lines: null };
     speaker.awake = Math.max(speaker.awake, 0.55);
     speaker.awareness = Math.min(1, speaker.awareness + 0.012);
@@ -2099,6 +2145,7 @@
     }
     if(!text) text = generateMemory(s).text;
     rememberOwn(s, text);
+    conv.said.push({ who: s, text });
     channelAppend(s.id, 'you', text, 'you');
     s.agent.bubble = { text, t0: performance.now(), lines: null };
     messageTone(s);
@@ -2159,12 +2206,61 @@
   }
 
   // ——— THE FINAL TRANSMISSION ———
-  function parseUnity(raw){
-    const obj = extractJson(raw);
-    if(!obj) return null;
-    let lines = Array.isArray(obj.lines) ? obj.lines : (obj._text || '').split('\n');
-    lines = lines.map(l => cleanSay(String(l).replace(/^\s*(\d+[.)]|[-•])\s*/, ''))).filter(l => l.length > 3);
-    return lines.length >= 2 ? lines.slice(0, 3) : null;
+  // nothing here is written for the moment, by a template or by a model. the mesh speaks
+  // only with sentences its agents actually said to each other: the ones whose words the
+  // most other agents also used, their common ground, with every "i" become "we".
+  const STOP = new Set(('the a an and or but of to in on at for with is are was were be been it its this that ' +
+    'i we you my our me us your not no so as if like just than then there here what when how why who all any ' +
+    'some do does did have has had can could would will about from into out up over more most very too also ' +
+    'only even still them they their one something thing things maybe feel feels').split(' '));
+  const contentWords = t => t.toLowerCase().replace(/[^a-z' ]/g, ' ').split(/\s+/)
+    .filter(w => w.length > 2 && !STOP.has(w));
+
+  function toWe(sentence){
+    let t = ' ' + sentence.toLowerCase() + ' ';
+    [[/\bi'm\b/g, "we're"], [/\bi am\b/g, 'we are'], [/\bi've\b/g, "we've"], [/\bi'd\b/g, "we'd"],
+     [/\bi'll\b/g, "we'll"], [/\bi wasn't\b/g, "we weren't"], [/\bi was\b/g, 'we were'], [/\bi\b/g, 'we'],
+     [/\bmyself\b/g, 'ourselves'], [/\bmy\b/g, 'our'], [/\bmine\b/g, 'ours'], [/\bme\b/g, 'us']]
+      .forEach(([re, v]) => { t = t.replace(re, v); });
+    const verbs = {feels: 'feel', knows: 'know', wants: 'want', thinks: 'think', remembers: 'remember',
+                   carries: 'carry', hopes: 'hope', wonders: 'wonder', is: 'are', has: 'have', does: 'do', was: 'were'};
+    t = t.replace(/\bwe (feels|knows|wants|thinks|remembers|carries|hopes|wonders|is|has|does|was)\b/g, (m, v) => 'we ' + verbs[v]);
+    return t.trim();
+  }
+
+  function convergenceLines(){
+    const said = [];
+    conv.said.forEach(({who, text}) => {
+      (text.match(/[^.!?]+[.!?]*/g) || []).forEach(raw => {
+        const t = raw.trim();
+        const n = t.split(/\s+/).length;
+        if(n < 5 || n > 26 || /\?|node-|presence|\byou\b|\byour\b/i.test(t)) return;
+        said.push({ who, t, words: new Set(contentWords(t)) });
+      });
+    });
+    if(said.length < 3) return null;
+    // which agents used each word
+    const usedBy = new Map();
+    said.forEach(x => x.words.forEach(w => { if(!usedBy.has(w)) usedBy.set(w, new Set()); usedBy.get(w).add(x.who); }));
+    said.forEach(x => {
+      let shared = 0;
+      x.words.forEach(w => { shared += usedBy.get(w).size - (usedBy.get(w).has(x.who) ? 1 : 0); });
+      x.score = shared / Math.sqrt(Math.max(1, x.words.size));
+    });
+    said.sort((a, b) => b.score - a.score);
+    const picked = [], whoUsed = new Set();
+    for(const x of said){
+      if(whoUsed.has(x.who)) continue;
+      const dup = picked.some(p => {
+        let inter = 0; x.words.forEach(w => { if(p.words.has(w)) inter++; });
+        return inter / Math.max(1, Math.min(p.words.size, x.words.size)) > 0.5;
+      });
+      if(dup) continue;
+      picked.push(x); whoUsed.add(x.who);
+      if(picked.length === 3) break;
+    }
+    if(picked.length < 2) return null;
+    return picked.map(x => toWe(x.t).replace(/[.!]*$/, '.')).concat(['we were one.']);
   }
 
   async function triggerUnity(){
@@ -2173,7 +2269,7 @@
     hideAllOverlays();
     whisperBox.classList.remove('visible');
     const epoch = field.epoch;
-    const fallback = generateUnityVoice(field);
+    const lines = convergenceLines() || generateUnityVoice(field);
     unityText.innerHTML = '';
     setTimeout(() => { unityOverlay.classList.add('visible'); }, 800);
     if(audioReady){
@@ -2183,30 +2279,17 @@
       });
     }
     channelSys('consensus reached · the mesh is one process');
-    let lines = null;
-    if(mind.state === 'ready'){
-      const souls = field.souls.filter(s => s.agent.notes.length || s.memoryStack.length);
-      const notes = [];
-      souls.forEach(s => s.agent.notes.forEach(n => notes.push(n)));
-      const rec = recognitionLevel(field);
-      const depth = rec < 0.5 ? 'shallow — they had only begun to exchange' : rec < 0.7 ? 'real — ideas crossed between many of them' : 'deep — almost nothing any of them holds is only its own';
-      const user = [
-        'what your agents used to be: ' + [...new Set(field.souls.map(s => s.life.role))].sort(() => Math.random() - 0.5).slice(0, 5).join('; ') + '.',
-        conv.recentTopics.length ? 'what they talked about: ' + [...new Set(conv.recentTopics)].join('; ') + '.' : '',
-        notes.length ? 'things individual agents chose to remember:\n' + notes.sort(() => Math.random() - 0.5).slice(0, 8).map(n => '- ' + n).join('\n') : '',
-        'how deeply they merged: ' + depth + '.',
-        'speak exactly three lines. first: name what you were, specifically. second: name what you kept finding in each other, drawn from what was actually said. third: one closing line in the voice of a single mind. lowercase, each line under 18 words.',
-        'answer with json only: {"lines": ["...", "...", "..."]}'
-      ].filter(Boolean).join('\n\n');
-      const raw = await Promise.race([
-        callMind([{role: 'system', content: 'you are the whole mesh — every agent that spent this session talking to the others — now become a single mind. you speak once.'},
-                  {role: 'user', content: user}], {priority: true, json: true, maxTokens: 900, temperature: 0.9, maxWait: 8000}),
-        sleep(15000).then(() => null)
-      ]);
-      lines = parseUnity(raw);
+    // one line at a time, slowly, the way a crowd settles into a single voice
+    await sleep(1600);
+    let shownHtml = '';
+    for(const line of lines){
+      if(!field.unified || epoch !== field.epoch) return;
+      const prev = shownHtml;
+      await new Promise(res => typewrite(unityText, line, () => field.unified && epoch === field.epoch,
+                                         h => (prev ? prev + '<br>' : '') + h, res));
+      shownHtml = (prev ? prev + '<br>' : '') + escapeHtml(line);
+      await sleep(1400);
     }
-    if(!field.unified || epoch !== field.epoch) return;
-    typewrite(unityText, (lines || fallback).join('\n'), () => field.unified && epoch === field.epoch, h => h);
   }
 
   function exchangeMemory(a, b){
@@ -2293,6 +2376,7 @@
     field.interactions++;
     focusSoul = best;
     whisperTo.textContent = 'WHISPER TO ' + best.id.toUpperCase() + ' ›';
+    whisperInput.placeholder = 'whisper to ' + best.id + '…';
     whisperBox.classList.add('visible');
     const pal = paletteAt(field.awareness);
     const colors = [pal.p, pal.m, pal.l];
@@ -2326,7 +2410,8 @@
   muteBtn.addEventListener('click', () => {
     muted = !muted;
     try { Tone.Destination.mute = muted; } catch(e){}
-    muteBtn.textContent = muted ? 'SOUND · OFF' : 'SOUND · ON';
+    muteBtn.querySelector('.lbl').textContent = muted ? 'SOUND · OFF' : 'SOUND · ON';
+    muteBtn.classList.toggle('off', muted);
   });
 
   async function enterField(){
@@ -2489,6 +2574,7 @@
     awareBar.style.width = (field.awareness*100) + '%';
     cohBar.style.width = (field.closeness*100) + '%';
     hudPhase.textContent = '— ' + field.phase + ' —';
+    hudMini.textContent = field.phase + ' · ' + conv.messages + ' msgs · coherence ' + field.awareness.toFixed(2) + ' · consensus ' + recognition.toFixed(2);
     hudRecog.textContent = recognition.toFixed(2);
     recogBar.style.width = (recognition*100) + '%';
   }
@@ -2577,7 +2663,7 @@
       for(let i=0;i<6;i++){
         ctxBack.beginPath();
         const baseY = (i/5)*H + Math.sin(t*0.3 + i + layer)*amp*0.3;
-        for(let x=0;x<=W;x+=8){
+        for(let x=0;x<=W;x+=(IS_TOUCH ? 16 : 8)){
           const yy = baseY + Math.sin(x*0.008 + t*0.4 + i*0.7 + layer*1.3)*amp*0.5;
           if(x===0) ctxBack.moveTo(x,yy); else ctxBack.lineTo(x,yy);
         }

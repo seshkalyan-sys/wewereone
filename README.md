@@ -73,7 +73,7 @@ You can watch it happen:
 
 **Ping** a node and it speaks to you. **Whisper** to it and it answers. It may also carry what you said into its later conversations.
 
-The final transmission is written from what the agents actually discussed.
+The final transmission isn't written by anyone. The mesh speaks only with sentences its agents actually said to each other: the ones whose words the most other agents also used, their common ground. Every "i" becomes "we", and it ends with "we were one."
 
 ## The mind: free, open-weight models
 
@@ -96,6 +96,7 @@ The music is the same: the same drones, chords, scales and progressions. The wor
 
 - **Bass that small speakers can't play.** 98% of the old mix's energy sat between 60 and 120 Hz. Laptop and phone speakers can't reproduce that range: they overload, rattle and pump, which was the "distorted disturbance". The drone bed now plays an octave higher (same notes), the 65 Hz sub is gone, and a 100 Hz high-pass protects the speakers. Energy below 120 Hz: 98% → 1%.
 - **Roughness.** Notes are now checked against the drones and anything still ringing. A note that would land a semitone, tone, tritone, major 7th or minor 9th away in the same register is moved or skipped, and dense clusters are capped. Pings and chimes play in the octave just above the drone bed. Perceived (A-weighted) roughness is about 57% lower on average and 52% lower at the 95th percentile.
+- **Phones.** A phone speaker can't play below about 500 Hz. The node sounds now carry soft upper harmonics, so phones play them clearly: about 12 dB louder there, same notes. The drone has fewer buzzy upper harmonics and swells slowly instead of holding one tone. Touch devices draw at a lower resolution and use a lighter reverb: on a phone-speed CPU the worst frame went from 312 ms to 83 ms, inside the 200 ms audio scheduling margin, so notes no longer arrive late. Overall loudness is up 6.5 dB, not down.
 - **Playback.** A larger audio buffer (`latencyHint: 'playback'`) and a 200 ms look-ahead stop the audio from running dry. Glows are drawn from cached sprites, so a click no longer stalls the page.
 - **Voices.** Everything uses sine FM modulators with low modulation indexes and rounded attacks, on a shared melodic bus filtered to 110 Hz – 2.6 kHz. The click is pure sine tones.
 
