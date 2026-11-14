@@ -1315,7 +1315,7 @@
   // through an OpenAI-compatible endpoint that allows calls straight from a browser.
   // keys never leave this browser except to the provider they belong to.
   // a tiny proxy (proxy/worker.js) holds a shared groq key, so visitors need none
-  const MESH_PROXY = '';
+  const MESH_PROXY = 'https://wewereone-mind.wewereone.workers.dev';
   const PROVIDERS = {
     mesh: {
       label: 'Mesh · shared · GPT-OSS 20B on Groq',
