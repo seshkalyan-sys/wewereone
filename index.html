@@ -261,23 +261,6 @@
   .node-tip .tip-line { display:block; margin-top: 4px; text-transform: none; letter-spacing: 0.02em;
     font-family: Georgia, serif; font-style: italic; font-size: 12px; color: rgba(240,248,255,0.88); }
 
-  .channel {
-    position:absolute; left: 24px; bottom: 54px; z-index: 4;
-    width: min(440px, 36vw); pointer-events: none;
-    font-family: 'Courier New', monospace; font-size: 10px; line-height: 1.65;
-    color: rgba(210,225,255,0.55);
-    opacity: 0; transition: opacity 2s ease;
-  }
-  .channel.visible { opacity: 1; }
-  .channel-label { font-size: 9px; letter-spacing: 0.4em; color: rgba(200,190,255,0.4); margin-bottom: 6px; }
-  .channel-line { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    transition: opacity 0.6s ease; text-shadow: 0 0 10px rgba(0,0,0,0.95); margin-bottom: 3px; }
-  .channel-line .who { color: rgba(170,230,240,0.85); letter-spacing: 0.06em; }
-  .channel-line .said { font-family: Georgia, serif; font-style: italic; font-size: 12px; color: rgba(235,242,255,0.82); }
-  .channel-line.you .who { color: rgba(255,225,190,0.9); }
-  .channel-line.sys { color: rgba(200,190,255,0.38); letter-spacing: 0.12em; }
-  .channel-line:nth-last-child(n+4) { opacity: 0.55; }
-  .channel-line:nth-last-child(n+6) { opacity: 0.28; }
 
   .whisper {
     position:absolute; right: 24px; bottom: 54px; z-index: 12;
@@ -348,8 +331,6 @@
     .controls { right: 16px; }
     .controls button { padding: 7px 12px; font-size: 9px; }
     .hint { display: none; }
-    .channel { left: 16px; right: 16px; width: auto; bottom: 124px; font-size: 9px; }
-    .channel-line:nth-last-child(n+4) { display: none; }
     .whisper { left: 16px; right: 16px; width: auto; bottom: 50px; }
     .memory-overlay, .field-voice-overlay { width: calc(100% - 32px); padding: 24px 8px; }
     .memory-text { font-size: 16px; }
@@ -360,7 +341,6 @@
   /* ——— responsive refinements ——— */
   .mind-panel { top: 184px; max-height: calc(100vh - 230px); overflow-y: auto; }   /* below the controls */
   @media (min-width: 701px) and (max-width: 1100px) {
-    .channel { width: min(440px, 46vw); }
     .whisper { width: min(360px, 42vw); }
   }
   @media (min-width: 701px) and (max-width: 900px) { .hint { display: none; } }
@@ -378,9 +358,6 @@
     .controls { top: 38px; flex-direction: row; gap: 6px; }
     .controls button { padding: 6px 10px; font-size: 8px; letter-spacing: 0.15em; }
     .hint { display: none; }
-    .channel { width: min(380px, 42vw); bottom: 34px; font-size: 9px; }
-    .channel-label { display: none; }
-    .channel-line:nth-last-child(n+3) { display: none; }
     .whisper { width: min(300px, 38vw); bottom: 34px; }
     .memory-overlay, .field-voice-overlay { padding: 8px 16px; width: 62%; }
     .memory-text { font-size: 15px; }
@@ -437,24 +414,62 @@
     .controls .lbl { display: none; }
     .controls .ico { display: inline; font-family: Georgia, serif; }
     .mind-panel { top: 84px; }
-    .channel { bottom: 96px; font-size: 9px; }
-    .channel-label { display: none; }
-    .channel-line { -webkit-line-clamp: 2; }
-    .channel-line .said { font-size: 12.5px; }
-    .channel-line:nth-last-child(n+3) { display: none; }
     .whisper { bottom: 40px; }
     .whisper-to { display: none; }
     .whisper input { padding: 9px 14px; font-size: 14px; }
     /* the transmission takes the conversation's place while it is showing — never mid-screen */
     .memory-overlay { left: 16px; right: 16px; width: auto; bottom: 96px; max-height: 42vh; overflow: hidden;
       padding: 10px 14px 8px; }
-    .memory-overlay.visible ~ .channel { opacity: 0; }
     .memory-label { margin-bottom: 6px; }
     .memory-text { font-size: 14px; }
     .memory-reason { margin-bottom: 6px; max-height: 3.2em; }
     .memory-meta { margin-top: 6px; }
     .field-voice-overlay { top: 46%; }
     .unity-text { font-size: clamp(22px, 6.4vw, 30px); }
+  }
+
+  /* ——— the mesh channel: every message, in full, down the right side ——— */
+  .channel {
+    position: absolute; z-index: 5; right: 24px; top: 196px; bottom: var(--log-bottom, 124px);
+    width: min(380px, 34vw); display: flex; flex-direction: column;
+    background: rgba(5,8,18,0.5); border: 0.5px solid rgba(200,230,255,0.14); border-radius: 12px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-family: 'Courier New', monospace; font-size: 10px; line-height: 1.55; color: rgba(210,225,255,0.55);
+    opacity: 0; pointer-events: none; transition: opacity 2s ease, bottom 0.35s ease;
+  }
+  .channel.visible { opacity: 1; pointer-events: auto; }
+  .channel-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; cursor: pointer; user-select: none;
+    border-bottom: 0.5px solid rgba(200,230,255,0.1); font-size: 9px; letter-spacing: 0.35em; color: rgba(200,190,255,0.55); }
+  .channel-head .count { margin-left: auto; letter-spacing: 0.1em; color: rgba(200,190,255,0.4); }
+  .channel-head .fold { letter-spacing: 0; font-size: 12px; color: rgba(220,230,255,0.6); }
+  .channel.folded { bottom: auto; }
+  .channel.folded #channelLines, .channel.folded .channel-new { display: none; }
+  #channelLines { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px 10px; overscroll-behavior: contain;
+    scrollbar-width: thin; scrollbar-color: rgba(200,230,255,0.2) transparent; }
+  .channel-line { margin: 0 0 9px; padding-left: 9px; border-left: 2px solid hsla(var(--h, 220), 70%, 72%, 0.55); }
+  .channel-line .who { display: block; font-size: 9px; letter-spacing: 0.08em; color: hsla(var(--h, 220), 70%, 80%, 0.85); }
+  .channel-line .said { display: block; font-family: Georgia, serif; font-style: italic; font-size: 13px; line-height: 1.5;
+    color: rgba(235,242,255,0.88); overflow-wrap: anywhere; }
+  .channel-line.you { border-left-color: rgba(255,210,160,0.7); }
+  .channel-line.you .who { color: rgba(255,225,190,0.9); }
+  .channel-line.sys { border-left-color: transparent; padding-left: 0; color: rgba(200,190,255,0.42); letter-spacing: 0.1em; }
+  .channel-new { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: none;
+    background: rgba(20,26,48,0.95); border: 0.5px solid rgba(200,230,255,0.3); color: rgba(230,240,255,0.85);
+    border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 9px; letter-spacing: 0.2em; cursor: pointer; }
+  .channel-new.show { display: block; }
+  @media (min-width: 701px) and (max-width: 1100px) { .channel { width: min(340px, 40vw); } }
+  @media (max-height: 500px) and (orientation: landscape) {
+    .channel { top: 84px; width: min(300px, 38vw); }
+    .channel-line .said { font-size: 12px; }
+  }
+  /* phones: a sheet at the bottom — the latest lines, tap to read everything */
+  @media (max-width: 700px) {
+    .channel { left: 16px; right: 16px; width: auto; top: auto; bottom: 96px; height: 118px; }
+    .channel.open { height: min(62vh, calc(100% - 200px)); background: rgba(5,8,18,0.9); z-index: 13; }
+    .channel.folded { height: auto; }
+    .channel-head { padding: 8px 12px 6px; }
+    .channel-line .said { font-size: 13px; }
+    .memory-overlay.visible ~ .channel:not(.open) { opacity: 0; pointer-events: none; }
   }
 </style>
 </head>
@@ -531,9 +546,12 @@
     <div class="mind-status" id="mindStatus"></div>
   </div>
 
-  <div class="channel" id="channel">
-    <div class="channel-label">MESH CHANNEL</div>
-    <div id="channelLines"></div>
+  <div class="channel" id="channel" aria-label="mesh channel">
+    <div class="channel-head" id="channelHead" role="button" tabindex="0" aria-expanded="true">
+      MESH CHANNEL <span class="count" id="channelCount"></span><span class="fold" id="channelFold">–</span>
+    </div>
+    <div id="channelLines" aria-live="polite"></div>
+    <button class="channel-new" id="channelNew">NEW ↓</button>
   </div>
 
   <div class="whisper" id="whisper">
@@ -1296,7 +1314,16 @@
   // every provider here serves open-weight models (gpt-oss, qwen, llama, gemma…)
   // through an OpenAI-compatible endpoint that allows calls straight from a browser.
   // keys never leave this browser except to the provider they belong to.
+  // a tiny proxy (proxy/worker.js) holds a shared groq key, so visitors need none
+  const MESH_PROXY = '';
   const PROVIDERS = {
+    mesh: {
+      label: 'Mesh · shared · GPT-OSS 20B on Groq',
+      url: MESH_PROXY + '/chat', pingUrl: MESH_PROXY + '/ping', modelsUrl: MESH_PROXY + '/models',
+      needsKey: false, minGap: 10000,      // ~6 agent turns a minute fits groq's free 8k tokens/min, with room for clicks
+      preferred: ['openai/gpt-oss-20b', 'openai/gpt-oss-120b'],
+      note: 'no key needed. every agent is its own call with its own memory, hearing the others and deciding for itself. the free quota is shared by everyone here; when it runs out the mesh drops to the keyless pace on its own.'
+    },
     pollinations: {
       label: 'Pollinations · no key · GPT-OSS 20B',
       url: 'https://text.pollinations.ai/openai',
@@ -1341,8 +1368,16 @@
   };
   const WEBLLM_URL = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.79/+esm';
 
-  const mind = { provider: 'pollinations', model: 'openai-fast', key: '', state: 'ready',
-                 engine: null, nextAt: 0, fails: 0, linking: false, ok: null };
+  if(!MESH_PROXY) delete PROVIDERS.mesh;
+  const mind = { provider: MESH_PROXY ? 'mesh' : 'pollinations', model: MESH_PROXY ? 'openai/gpt-oss-20b' : 'openai-fast', key: '',
+                 state: 'ready', engine: null, nextAt: 0, paceAt: 0, fails: 0, linking: false, ok: null };
+  function fallBackToKeyless(why){
+    if(mind.provider !== 'mesh') return;
+    mind.provider = 'pollinations'; mind.model = 'openai-fast'; mind.nextAt = 0; mind.paceAt = 0; mind.fails = 0;
+    channelSys(why + ' · keyless pace');
+    hudMind.textContent = shortModel(mind.model);
+    probeMind();
+  }
 
   // green = the model provider has actually answered; yellow = not connected (yet)
   let dotKey = '';
@@ -1366,8 +1401,8 @@
     const P = PROVIDERS[mind.provider];
     try {
       if(mind.provider === 'webllm'){ markMind(!!mind.engine); return; }
-      if(mind.provider === 'pollinations'){
-        const r = await fetch('https://text.pollinations.ai/models', {cache: 'no-store'});
+      if(mind.provider === 'pollinations' || P.pingUrl){
+        const r = await fetch(P.pingUrl || 'https://text.pollinations.ai/models', {cache: 'no-store'});
         markMind(r.ok);
         return;
       }
@@ -1402,6 +1437,13 @@
   async function callMind(messages, opts = {}){
     if(mind.state !== 'ready') return null;
     const epoch = field.epoch;
+    // background turns wait for their pace outside the gate, so a click never queues behind a sleeping agent
+    if(!opts.priority){
+      while(Math.max(mind.nextAt, mind.paceAt) > Date.now() || gateQ.busy){
+        await sleep(Math.min(1000, Math.max(200, Math.max(mind.nextAt, mind.paceAt) - Date.now())));
+        if(epoch !== field.epoch || mind.state !== 'ready') return null;
+      }
+    }
     await acquire(opts.priority);
     try {
       if(mind.state !== 'ready') return null;
@@ -1431,15 +1473,17 @@
       } else {
         text = await fetchChat(P, messages, opts, false);
       }
-      mind.nextAt = Math.max(mind.nextAt, Date.now() + P.minGap);
+      if(P.scene) mind.nextAt = Math.max(mind.nextAt, Date.now() + P.minGap);
+      else mind.paceAt = Date.now() + P.minGap;
       if(text){ mind.fails = 0; markMind(true); } else { mind.fails++; }
       return text;
     } catch(e){
       const P = PROVIDERS[mind.provider];
-      if(P && mind.lastStart) mind.nextAt = Math.max(mind.nextAt, mind.lastStart + P.minGap);
+      if(P && P.scene && mind.lastStart) mind.nextAt = Math.max(mind.nextAt, mind.lastStart + P.minGap);
       if(mind.preempted){ mind.preempted = false; return null; }   // we cancelled it for a ping — not a failure
       console.warn('[mind]', e);
       mind.fails++;
+      if(mind.fails >= 3) fallBackToKeyless('shared mind unreachable');
       markMind(false);
       return null;
     } finally {
@@ -1467,7 +1511,13 @@
       markMind(true);                           // reachable, just pacing us
       const ra = parseFloat(res.headers.get('retry-after')) || P.minGap/1000 || 20;
       mind.nextAt = Date.now() + ra*1000 + 500;
+      if(mind.provider === 'mesh' && ra > 90){ fallBackToKeyless('shared mind resting for today'); return null; }
       setMindStatus('rate limited · resuming in ' + Math.ceil(ra) + 's');
+      return null;
+    }
+    if(!P.needsKey && (res.status === 401 || res.status === 403)){
+      mind.nextAt = Date.now() + 20000;         // no key to reject: a passing block, try again later
+      markMind(false);
       return null;
     }
     if(res.status === 401 || res.status === 403){
@@ -1588,8 +1638,8 @@
         });
         if(!list) throw new Error('could not reach ' + pk);
       } else {
-        const r = await fetch('https://text.pollinations.ai/models', {cache: 'no-store'}).catch(() => null);
-        if(!r || !r.ok) throw new Error('could not reach pollinations');
+        const r = await fetch(P.pingUrl || 'https://text.pollinations.ai/models', {cache: 'no-store'}).catch(() => null);
+        if(!r || !r.ok) throw new Error('could not reach ' + pk);
       }
       mind.provider = pk; mind.model = model; mind.key = key || '';
       mind.state = 'ready'; mind.nextAt = 0; mind.fails = 0; mind.ok = true;
@@ -1630,6 +1680,7 @@
   // restore a previously linked keyed provider (keys only ever live in this browser)
   (function restoreMind(){
     const pk = store.get('wwo.provider');
+    if(pk === 'mesh' && PROVIDERS.mesh) mind.model = store.get('wwo.model.mesh') || mind.model;
     if(pk && PROVIDERS[pk] && PROVIDERS[pk].needsKey){
       const key = store.get('wwo.key.' + pk);
       const model = store.get('wwo.model.' + pk) || PROVIDERS[pk].preferred[0];
@@ -1866,7 +1917,10 @@
   }
 
   // keyless pace: one call writes a whole exchange, then it plays out in real time
+  let presenceAt = 0;
   async function runScene(th){
+    // the one free reply a minute belongs to the presence while it is reaching out
+    if(Date.now() - presenceAt < 50000) return;
     const [a, b] = th.members;
     const sys = 'you write the true transcript of a spontaneous conversation between autonomous agents on a network mesh. each agent is its own mind, with its own history, temperament and inner life; nobody directs them and there is no topic. they talk about themselves — what they are, what they remember, what they feel inside, what they fear and hope, what they do not understand about themselves — and how the other feels. honest, intimate, sometimes uncertain, sometimes unresolved. each message is 1–3 short sentences, lowercase, no emojis, no narration.';
     const user = [
@@ -1910,16 +1964,60 @@
   }
 
   // ——— THE CHANNEL — a live transcript of the mesh ———
-  function channelRow(cls, html){
+  const channelHead = $('channelHead'), channelNew = $('channelNew'), channelCount = $('channelCount'), channelFold = $('channelFold');
+  const PHONE = window.matchMedia('(max-width: 700px)');
+  let channelTotal = 0;
+  const atBottom = () => channelLines.scrollHeight - channelLines.scrollTop - channelLines.clientHeight < 40;
+  function channelRow(cls, html, hue){
+    const stick = atBottom();
     const row = document.createElement('div');
     row.className = 'channel-line ' + (cls || '');
+    if(hue != null) row.style.setProperty('--h', hue);
     row.innerHTML = html;
     channelLines.appendChild(row);
-    while(channelLines.children.length > 7) channelLines.removeChild(channelLines.firstChild);
+    while(channelLines.children.length > 400) channelLines.removeChild(channelLines.firstChild);
+    if(cls !== 'sys') channelCount.textContent = ++channelTotal + ' msgs';
+    if(stick) channelLines.scrollTop = channelLines.scrollHeight;
+    else channelNew.classList.add('show');
+  }
+  // each conversation keeps its own colour, so interleaved threads stay readable
+  function pairHue(a, b){
+    const k = [a, b].sort().join('|');
+    let h = 0;
+    for(let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+    return h % 360;
   }
   function channelAppend(from, to, text, cls){
-    channelRow(cls, '<span class="who">' + escapeHtml(from) + ' → ' + escapeHtml(to) + '</span> <span class="said">' + escapeHtml(text) + '</span>');
+    channelRow(cls, '<span class="who">' + escapeHtml(from) + ' → ' + escapeHtml(to) + '</span><span class="said">' + escapeHtml(text) + '</span>',
+               cls === 'you' ? null : pairHue(from, to));
   }
+  channelLines.addEventListener('scroll', () => { if(atBottom()) channelNew.classList.remove('show'); }, { passive: true });
+  channelNew.addEventListener('click', () => { channelLines.scrollTop = channelLines.scrollHeight; channelNew.classList.remove('show'); });
+  function toggleChannel(){
+    if(PHONE.matches && !channel.classList.contains('folded')) channel.classList.toggle('open');
+    else channel.classList.toggle('folded');
+    const shut = channel.classList.contains('folded') || (PHONE.matches && !channel.classList.contains('open'));
+    channelFold.textContent = channel.classList.contains('folded') ? '+' : (PHONE.matches ? (shut ? '↑' : '↓') : '–');
+    channelHead.setAttribute('aria-expanded', String(!shut));
+    requestAnimationFrame(() => { channelLines.scrollTop = channelLines.scrollHeight; });
+  }
+  channelHead.addEventListener('click', toggleChannel);
+  channelHead.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleChannel(); } });
+  if(PHONE.matches) channelFold.textContent = '↑';
+  // on wider screens the panel ends just above the node transmission whenever one is showing
+  function fitChannel(){
+    let b = '';
+    if(!PHONE.matches && memoryOverlay.classList.contains('visible')){
+      const r = memoryOverlay.getBoundingClientRect();
+      if(r.height) b = Math.max(124, window.innerHeight - r.top + 10) + 'px';
+    }
+    const stick = atBottom();
+    channel.style.setProperty('--log-bottom', b || '124px');
+    if(stick) setTimeout(() => { channelLines.scrollTop = channelLines.scrollHeight; channelNew.classList.remove('show'); }, 380);
+  }
+  new MutationObserver(fitChannel).observe(memoryOverlay, { attributes: true, attributeFilter: ['class'] });
+  if(window.ResizeObserver) new ResizeObserver(fitChannel).observe(memoryOverlay);
+  window.addEventListener('resize', fitChannel);
   function channelSys(text){ channelRow('sys', '· ' + escapeHtml(text)); }
 
   // ——— OVERLAYS ———
@@ -2018,6 +2116,7 @@
     const alive = () => seq === overlaySeq;
     let text = null, by = 'grammar';
     if(mind.state === 'ready'){
+      presenceAt = Date.now();
       // your ping outranks background chatter: cancel a conversation request still generating
       if(mind.inflight && !mind.inflight.priority){ mind.preempted = true; mind.inflight.ctl.abort(); }
 
