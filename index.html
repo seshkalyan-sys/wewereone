@@ -443,9 +443,8 @@
   .channel-head .fold { letter-spacing: 0; font-size: 12px; color: rgba(220,230,255,0.55); }
   .channel.folded #channelLines, .channel.folded .channel-new { display: none; }
   /* only the words catch the pointer; the gaps between them stay clickable nodes */
-  #channelLines { order: -1; flex: 1; min-height: 0; overflow-y: auto; padding: 0 6px 4px 0; overscroll-behavior: contain;
-    scrollbar-width: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 56px);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 56px); }
+  #channelLines { order: -1; position: relative; flex: 0 1 auto; min-height: 0; overflow-y: auto; padding: 0 6px 0 0;
+    overscroll-behavior: contain; scrollbar-width: none; }
   #channelLines::-webkit-scrollbar { display: none; }
   .channel-line { margin: 0 0 8px; padding-left: 8px; border-left: 1.5px solid hsla(var(--h, 220), 70%, 72%, 0.5);
     pointer-events: auto; text-shadow: 0 0 10px rgba(0,0,0,0.95), 0 1px 3px rgba(0,0,0,0.9); }
@@ -465,9 +464,9 @@
   }
   /* phones: the latest lines above the whisper box; tap the label to read everything */
   @media (max-width: 700px) {
-    .channel { left: 16px; right: 16px; width: auto; bottom: 96px; max-height: 128px; }
+    .channel { left: 16px; right: 16px; width: auto; bottom: 96px; max-height: 40vh; }
     .channel.open { max-height: min(60vh, calc(100% - 200px)); z-index: 13; }
-    .channel.open #channelLines { -webkit-mask-image: none; mask-image: none; }
+    .channel.open #channelLines { max-height: none !important; }
     .channel.open::before { content: ''; position: absolute; inset: -12px -16px -12px -16px; z-index: -1;
       background: linear-gradient(to top, rgba(3,5,12,0.85), rgba(3,5,12,0.55) 70%, transparent); pointer-events: none; }
     .memory-overlay.visible ~ .channel:not(.open) { opacity: 0; pointer-events: none; }
@@ -1979,9 +1978,18 @@
     channelLines.appendChild(row);
     while(channelLines.children.length > 400) channelLines.removeChild(channelLines.firstChild);
     if(cls !== 'sys') channelCount.textContent = ++channelTotal + ' msgs';
+    capChannel();
     if(stick) channelLines.scrollTop = channelLines.scrollHeight;
     else channelNew.classList.add('show');
   }
+  // the window shows the latest three messages; everything older is a scroll away
+  function capChannel(){
+    const said = channelLines.querySelectorAll('.channel-line:not(.sys)');
+    if(said.length <= 3){ channelLines.style.maxHeight = ''; return; }
+    const first = said[said.length - 3];
+    channelLines.style.maxHeight = (channelLines.scrollHeight - first.offsetTop) + 'px';
+  }
+  window.addEventListener('resize', () => { const st = atBottom(); capChannel(); if(st) channelLines.scrollTop = channelLines.scrollHeight; });
   // each conversation keeps its own colour, so interleaved threads stay readable
   function pairHue(a, b){
     const k = [a, b].sort().join('|');
