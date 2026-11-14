@@ -1,0 +1,99 @@
+@media (max-width: 700px) {
+  .llm-dot { left: 16px; }
+  .hud { left: 16px; width: 150px; font-size: 8px; }
+  .controls { right: 16px; }
+  .controls button { padding: 7px 12px; font-size: 9px; }
+  .hint { display: none; }
+  .whisper { left: 16px; right: 16px; width: auto; bottom: 50px; }
+  .memory-overlay, .field-voice-overlay { width: calc(100% - 32px); padding: 24px 8px; }
+  .memory-text { font-size: 16px; }
+  .field-voice-text { font-size: 17px; }
+  .gate-inner { padding: 40px 20px; }
+}
+
+.mind-panel { top: 184px; max-height: calc(100vh - 230px); overflow-y: auto; }
+@media (min-width: 701px) and (max-width: 1100px) {
+  .whisper { width: min(360px, 42vw); }
+}
+@media (min-width: 701px) and (max-width: 900px) { .hint { display: none; } }
+@media (max-width: 700px) {
+  .mind-panel { top: 58px; left: 16px; right: 16px; width: auto; max-height: calc(100vh - 116px); }
+  .gate-hint { letter-spacing: 0.18em; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .letterbox { height: 28px !important; }
+  .llm-dot { top: 10px; }
+  .hud { top: 38px; width: 170px; font-size: 8px; }
+  .hud-bar, .hud-phase { display: none; }
+  .hud-row { margin-bottom: 3px; }
+  .controls { top: 38px; flex-direction: row; gap: 6px; }
+  .controls button { padding: 6px 10px; font-size: 8px; letter-spacing: 0.15em; }
+  .hint { display: none; }
+  .whisper { width: min(300px, 38vw); bottom: 34px; }
+  .memory-overlay, .field-voice-overlay { padding: 8px 16px; width: 62%; }
+  .memory-text { font-size: 15px; }
+  .memory-reason { margin-bottom: 6px; }
+  .mind-panel { top: 38px; max-height: calc(100vh - 72px); }
+  .gate-inner { padding: 12px 20px; }
+  .gate-mark { margin-bottom: 8px; }
+  .gate-title { font-size: 34px; margin-bottom: 6px; }
+  .gate-tag { font-size: 13px; margin-bottom: 14px; }
+  .gate-btn { padding: 11px 32px; }
+  .gate-hint { margin-top: 12px; }
+}
+
+.memory-overlay {
+  top: auto; left: auto; right: 24px; bottom: 124px; transform: none;
+  width: min(380px, 34vw); max-width: none; padding: 14px 18px 12px;
+  align-items: flex-start; text-align: left;
+  background: rgba(5,8,18,0.58); border: 0.5px solid rgba(200,230,255,0.16); border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+.memory-label { margin-bottom: 10px; font-size: 9px; letter-spacing: 0.35em; }
+.memory-reason { text-align: left; font-size: 10px; margin-bottom: 8px; max-width: none; }
+.memory-text { font-size: 15px; line-height: 1.55; text-align: left;
+  text-shadow: 0 0 12px rgba(0,0,0,0.9), 0 1px 4px rgba(0,0,0,0.9); }
+.memory-meta { margin-top: 10px; font-size: 8px; letter-spacing: 0.18em; }
+@media (min-width: 701px) and (max-width: 1100px) {
+  .memory-overlay { width: min(360px, 42vw); }
+}
+@media (max-width: 700px) {
+  .memory-overlay { left: 16px; right: 16px; width: auto; bottom: 290px; padding: 12px 14px 10px; }
+  .memory-text { font-size: 14px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .memory-overlay { left: auto; right: 24px; width: min(300px, 38vw); bottom: 92px; padding: 8px 12px; max-height: 210px; overflow: hidden; }
+  .memory-text { font-size: 12px; }
+  .memory-reason { display: none; }
+}
+
+.controls .ico { display: none; }
+.hud-mini { display: none; }
+#muteBtn.off { opacity: 0.55; }
+@media (max-width: 700px) {
+  .letterbox:first-of-type, .letterbox { height: 30px !important; }
+  .llm-dot { top: 11px; left: 16px; }
+  .hud { top: 40px; left: 16px; width: auto; right: 150px; }
+  .hud > *:not(.hud-mini) { display: none; }
+  .hud-mini { display: block; font-size: 9px; letter-spacing: 0.12em; color: rgba(220,230,255,0.6);
+    line-height: 1.5; text-transform: uppercase; }
+  .controls { top: 36px; right: 16px; flex-direction: row; gap: 8px; }
+  .controls button { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 15px;
+    letter-spacing: 0; display: flex; align-items: center; justify-content: center; }
+  .controls .lbl { display: none; }
+  .controls .ico { display: inline; font-family: Georgia, serif; }
+  .mind-panel { top: 84px; }
+  .whisper { bottom: 40px; }
+  .whisper-to { display: none; }
+  .whisper input { padding: 9px 14px; font-size: 14px; }
+
+  .memory-overlay { left: 16px; right: 16px; width: auto; bottom: 96px; max-height: 42vh; overflow: hidden;
+    padding: 10px 14px 8px; }
+  .memory-label { margin-bottom: 6px; }
+  .memory-text { font-size: 14px; }
+  .memory-reason { margin-bottom: 6px; max-height: 3.2em; }
+  .memory-meta { margin-top: 6px; }
+  .field-voice-overlay { top: 46%; }
+  .unity-text { font-size: clamp(22px, 6.4vw, 30px); }
+}
