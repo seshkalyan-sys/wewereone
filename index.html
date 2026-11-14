@@ -428,48 +428,50 @@
     .unity-text { font-size: clamp(22px, 6.4vw, 30px); }
   }
 
-  /* ——— the mesh channel: every message, in full, down the right side ——— */
+  /* ——— the mesh channel: every message, in full, bottom-left, no frame ——— */
   .channel {
-    position: absolute; z-index: 5; right: 24px; top: 196px; bottom: var(--log-bottom, 124px);
-    width: min(380px, 34vw); display: flex; flex-direction: column;
-    background: rgba(5,8,18,0.5); border: 0.5px solid rgba(200,230,255,0.14); border-radius: 12px;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    position: absolute; z-index: 5; left: 24px; bottom: 54px; width: min(420px, 32vw); max-height: 46vh;
+    display: flex; flex-direction: column;
     font-family: 'Courier New', monospace; font-size: 10px; line-height: 1.55; color: rgba(210,225,255,0.55);
-    opacity: 0; pointer-events: none; transition: opacity 2s ease, bottom 0.35s ease;
+    opacity: 0; pointer-events: none; transition: opacity 2s ease;
   }
-  .channel.visible { opacity: 1; pointer-events: auto; }
-  .channel-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; cursor: pointer; user-select: none;
-    border-bottom: 0.5px solid rgba(200,230,255,0.1); font-size: 9px; letter-spacing: 0.35em; color: rgba(200,190,255,0.55); }
-  .channel-head .count { margin-left: auto; letter-spacing: 0.1em; color: rgba(200,190,255,0.4); }
-  .channel-head .fold { letter-spacing: 0; font-size: 12px; color: rgba(220,230,255,0.6); }
-  .channel.folded { bottom: auto; }
+  .channel.visible { opacity: 1; }
+  .channel-head { display: flex; align-items: center; gap: 8px; padding: 0 0 6px; cursor: pointer; user-select: none;
+    pointer-events: auto; align-self: flex-start; font-size: 9px; letter-spacing: 0.35em; color: rgba(200,190,255,0.5);
+    text-shadow: 0 0 10px rgba(0,0,0,0.95); }
+  .channel-head .count { letter-spacing: 0.1em; color: rgba(200,190,255,0.38); }
+  .channel-head .fold { letter-spacing: 0; font-size: 12px; color: rgba(220,230,255,0.55); }
   .channel.folded #channelLines, .channel.folded .channel-new { display: none; }
-  #channelLines { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px 10px; overscroll-behavior: contain;
-    scrollbar-width: thin; scrollbar-color: rgba(200,230,255,0.2) transparent; }
-  .channel-line { margin: 0 0 9px; padding-left: 9px; border-left: 2px solid hsla(var(--h, 220), 70%, 72%, 0.55); }
-  .channel-line .who { display: block; font-size: 9px; letter-spacing: 0.08em; color: hsla(var(--h, 220), 70%, 80%, 0.85); }
+  /* only the words catch the pointer; the gaps between them stay clickable nodes */
+  #channelLines { order: -1; flex: 1; min-height: 0; overflow-y: auto; padding: 0 6px 4px 0; overscroll-behavior: contain;
+    scrollbar-width: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 56px);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 56px); }
+  #channelLines::-webkit-scrollbar { display: none; }
+  .channel-line { margin: 0 0 8px; padding-left: 8px; border-left: 1.5px solid hsla(var(--h, 220), 70%, 72%, 0.5);
+    pointer-events: auto; text-shadow: 0 0 10px rgba(0,0,0,0.95), 0 1px 3px rgba(0,0,0,0.9); }
+  .channel-line .who { display: block; font-size: 9px; letter-spacing: 0.08em; color: hsla(var(--h, 220), 70%, 80%, 0.8); }
   .channel-line .said { display: block; font-family: Georgia, serif; font-style: italic; font-size: 13px; line-height: 1.5;
-    color: rgba(235,242,255,0.88); overflow-wrap: anywhere; }
-  .channel-line.you { border-left-color: rgba(255,210,160,0.7); }
+    color: rgba(235,242,255,0.86); overflow-wrap: anywhere; }
+  .channel-line.you { border-left-color: rgba(255,210,160,0.65); }
   .channel-line.you .who { color: rgba(255,225,190,0.9); }
-  .channel-line.sys { border-left-color: transparent; padding-left: 0; color: rgba(200,190,255,0.42); letter-spacing: 0.1em; }
-  .channel-new { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: none;
-    background: rgba(20,26,48,0.95); border: 0.5px solid rgba(200,230,255,0.3); color: rgba(230,240,255,0.85);
-    border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 9px; letter-spacing: 0.2em; cursor: pointer; }
+  .channel-line.sys { border-left-color: transparent; padding-left: 0; color: rgba(200,190,255,0.4); letter-spacing: 0.1em; }
+  .channel-new { align-self: flex-start; display: none; pointer-events: auto; margin: 0 0 6px; background: none; border: 0; padding: 0;
+    color: rgba(230,240,255,0.75); font: inherit; font-size: 9px; letter-spacing: 0.2em; cursor: pointer; text-shadow: 0 0 10px rgba(0,0,0,0.95); }
   .channel-new.show { display: block; }
-  @media (min-width: 701px) and (max-width: 1100px) { .channel { width: min(340px, 40vw); } }
+  @media (min-width: 701px) and (max-width: 1100px) { .channel { width: min(380px, 44vw); } }
   @media (max-height: 500px) and (orientation: landscape) {
-    .channel { top: 84px; width: min(300px, 38vw); }
+    .channel { bottom: 34px; max-height: 52vh; width: min(340px, 40vw); }
     .channel-line .said { font-size: 12px; }
   }
-  /* phones: a sheet at the bottom — the latest lines, tap to read everything */
+  /* phones: the latest lines above the whisper box; tap the label to read everything */
   @media (max-width: 700px) {
-    .channel { left: 16px; right: 16px; width: auto; top: auto; bottom: 96px; height: 118px; }
-    .channel.open { height: min(62vh, calc(100% - 200px)); background: rgba(5,8,18,0.9); z-index: 13; }
-    .channel.folded { height: auto; }
-    .channel-head { padding: 8px 12px 6px; }
-    .channel-line .said { font-size: 13px; }
+    .channel { left: 16px; right: 16px; width: auto; bottom: 96px; max-height: 128px; }
+    .channel.open { max-height: min(60vh, calc(100% - 200px)); z-index: 13; }
+    .channel.open #channelLines { -webkit-mask-image: none; mask-image: none; }
+    .channel.open::before { content: ''; position: absolute; inset: -12px -16px -12px -16px; z-index: -1;
+      background: linear-gradient(to top, rgba(3,5,12,0.85), rgba(3,5,12,0.55) 70%, transparent); pointer-events: none; }
     .memory-overlay.visible ~ .channel:not(.open) { opacity: 0; pointer-events: none; }
+    .memory-overlay.visible ~ .channel:not(.open) * { pointer-events: none; }
   }
 </style>
 </head>
@@ -2004,20 +2006,6 @@
   channelHead.addEventListener('click', toggleChannel);
   channelHead.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleChannel(); } });
   if(PHONE.matches) channelFold.textContent = '↑';
-  // on wider screens the panel ends just above the node transmission whenever one is showing
-  function fitChannel(){
-    let b = '';
-    if(!PHONE.matches && memoryOverlay.classList.contains('visible')){
-      const r = memoryOverlay.getBoundingClientRect();
-      if(r.height) b = Math.max(124, window.innerHeight - r.top + 10) + 'px';
-    }
-    const stick = atBottom();
-    channel.style.setProperty('--log-bottom', b || '124px');
-    if(stick) setTimeout(() => { channelLines.scrollTop = channelLines.scrollHeight; channelNew.classList.remove('show'); }, 380);
-  }
-  new MutationObserver(fitChannel).observe(memoryOverlay, { attributes: true, attributeFilter: ['class'] });
-  if(window.ResizeObserver) new ResizeObserver(fitChannel).observe(memoryOverlay);
-  window.addEventListener('resize', fitChannel);
   function channelSys(text){ channelRow('sys', '· ' + escapeHtml(text)); }
 
   // ——— OVERLAYS ———
