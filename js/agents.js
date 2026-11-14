@@ -25,12 +25,13 @@ function rememberHeard(s, from, text){
   if(s.memoryStack.length > 8) s.memoryStack.shift();
 }
 
-function cleanSay(s){
+export function cleanSay(s){
   if(!s) return '';
   s = String(s)
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/<\|[^>]*\|>/g, '')
     .replace(/\*+/g, '')
+    .replace(/\s*—\s*/g, ', ')
     .replace(/^\s*(node-[0-9a-f]{4}|you|me|agent)\s*:\s*/i, '')
     .replace(/^["'“”‘’\s]+|["'“”‘’\s]+$/g, '')
     .replace(/\s+/g, ' ')

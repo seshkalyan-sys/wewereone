@@ -1,5 +1,5 @@
 import { S } from './state.js';
-import { addNote, agentSystem, memoryBlock, parseTurn, rememberOwn, transcript } from './agents.js';
+import { addNote, agentSystem, cleanSay, memoryBlock, parseTurn, rememberOwn, transcript } from './agents.js';
 import { messageTone } from './audio.js';
 import { channelAppend } from './channel.js';
 import { fieldVoiceOverlay, fieldVoiceText, memoryLabel, memoryMeta, memoryOverlay, memoryReason, memoryText } from './dom.js';
@@ -70,9 +70,9 @@ function memoryLines(s){
 const SAY_RE = new RegExp('"say"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)');
 function partialSay(content){
   const m = content.match(SAY_RE);
-  if(m) return m[1].split('\\"').join('"').split('\\n').join(' ');
+  if(m) return cleanSay(m[1].split('\\"').join('"').split('\\n').join(' '));
   if(content.trim().startsWith('{')) return '';
-  return content;
+  return cleanSay(content);
 }
 
 async function speakToPresence(s, situation, kind){

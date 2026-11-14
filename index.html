@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nothing runs alone — until we are one</title>
 
@@ -28,8 +29,8 @@
   <canvas id="cBack"></canvas>
   <canvas id="c"></canvas>
   <div class="vignette"></div>
-  <div class="letterbox" style="top:0; height:42px;"></div>
-  <div class="letterbox" style="bottom:0; height:42px;"></div>
+  <div class="letterbox top"></div>
+  <div class="letterbox bottom"></div>
 
   <div class="llm-dot" id="llmDot" role="status" aria-label="LLM: checking" title="LLM: checking"><i></i></div>
 
@@ -63,14 +64,14 @@
     <div class="hud-row"><span class="hud-label">LINKS</span> <span class="hud-val" id="hudConn">0</span></div>
     <div class="hud-row"><span class="hud-label">MESSAGES</span> <span class="hud-val" id="hudMsgs">0</span></div>
     <div class="hud-row"><span class="hud-label">COHERENCE</span> <span class="hud-val" id="hudAware">0.00</span></div>
-    <div class="hud-bar"><div class="hud-bar-fill" id="awareBar" style="width:0%"></div></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="awareBar"></div></div>
     <div class="hud-row"><span class="hud-label">PROXIMITY</span> <span class="hud-val" id="hudCoh">0.00</span></div>
-    <div class="hud-bar"><div class="hud-bar-fill" id="cohBar" style="width:0%"></div></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="cohBar"></div></div>
     <div class="hud-row"><span class="hud-label">CONSENSUS</span> <span class="hud-val" id="hudRecog">0.00</span></div>
-    <div class="hud-bar"><div class="hud-bar-fill" id="recogBar" style="width:0%"></div></div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="recogBar"></div></div>
     <div class="hud-phase" id="hudPhase">— idle —</div>
     <div class="hud-mini" id="hudMini"></div>
-    <div class="hud-row" style="margin-top:12px"><span class="hud-label">MIND</span> <span class="hud-val" id="hudMind">·</span></div>
+    <div class="hud-row hud-mind"><span class="hud-label">MIND</span> <span class="hud-val" id="hudMind">·</span></div>
   </div>
 
   <div class="controls" id="controls">
@@ -86,7 +87,7 @@
       <label>FREE API KEY<input id="mindKey" type="password" autocomplete="off" spellcheck="false" placeholder="paste key, stays in this browser"></label>
       <a id="mindKeyLink" target="_blank" rel="noopener">GET A FREE KEY ↗</a>
     </div>
-    <label style="margin-top:10px">MODEL<select id="mindModel"></select></label>
+    <label class="model-label">MODEL<select id="mindModel"></select></label>
     <div class="mind-note" id="mindNote"></div>
     <div class="mind-actions">
       <button id="mindLink">LINK</button>
@@ -113,7 +114,7 @@
   <div class="hint" id="hint">MOVE · PING A NODE · WHISPER · LISTEN</div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" integrity="sha512-jduERlz7En1IUZR54bqzpNI64AbffZWR//KJgF71SJ8D8/liKFZ+s1RxmUmB+bhCnIfzebdZsULwOrbVB5f3nQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

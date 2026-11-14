@@ -52,6 +52,7 @@
 }
 .mind-panel.open { display: block; }
 .mind-title { letter-spacing: 0.35em; font-size: 9px; color: rgba(200,190,255,0.55); margin-bottom: 14px; }
+.mind-panel label.model-label { margin-top: 10px; }
 .mind-panel label { display:block; margin-bottom: 10px; font-size: 9px; letter-spacing: 0.3em; color: rgba(200,190,255,0.5); }
 .mind-panel select, .mind-panel input {
   display:block; width: 100%; margin-top: 5px;

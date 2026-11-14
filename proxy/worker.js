@@ -17,8 +17,8 @@ async function chatModels(env) {
   return models.ids;
 }
 const ORIGINS = [/^https:\/\/seshkalyan-sys\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
-const PER_IP_PER_MIN = 20;
-const seen = new Map();
+const ROLES = new Set(['system', 'user', 'assistant']);
+const MAX_BODY = 64 * 1024, MAX_CHARS = 24000, MAX_MESSAGES = 6;
 
 function cors(origin) {
   return {
@@ -31,13 +31,17 @@ function cors(origin) {
   };
 }
 
-function tooFast(ip) {
-  const now = Date.now();
-  const hits = (seen.get(ip) || []).filter(t => now - t < 60000);
-  hits.push(now);
-  seen.set(ip, hits);
-  if (seen.size > 5000) seen.clear();
-  return hits.length > PER_IP_PER_MIN;
+// text-only chat messages with known roles; anything else is rejected
+function cleanMessages(list) {
+  if (!Array.isArray(list) || !list.length || list.length > MAX_MESSAGES) return null;
+  let chars = 0;
+  const out = [];
+  for (const m of list) {
+    if (!m || !ROLES.has(m.role) || typeof m.content !== 'string') return null;
+    chars += m.content.length;
+    out.push({ role: m.role, content: m.content });
+  }
+  return chars <= MAX_CHARS ? out : null;
 }
 
 export default {
@@ -53,21 +57,24 @@ export default {
       return new Response(JSON.stringify({ data: ids.map(id => ({ id })) }), { headers: { ...h, 'Content-Type': 'application/json' } });
     }
     if (req.method !== 'POST' || path !== '/chat') return new Response('not found', { status: 404, headers: h });
-    if (tooFast(req.headers.get('CF-Connecting-IP') || '')) {
-      return new Response('slow down', { status: 429, headers: { ...h, 'Retry-After': '10' } });
-    }
+    const { success } = await env.LIMITER.limit({ key: req.headers.get('CF-Connecting-IP') || 'unknown' });
+    if (!success) return new Response('slow down', { status: 429, headers: { ...h, 'Retry-After': '10' } });
+    if (Number(req.headers.get('Content-Length') || 0) > MAX_BODY) return new Response('too large', { status: 413, headers: h });
 
     let body;
-    try { body = await req.json(); } catch { return new Response('bad json', { status: 400, headers: h }); }
-    if (!Array.isArray(body.messages) || JSON.stringify(body.messages).length > 24000) {
-      return new Response('bad request', { status: 400, headers: h });
-    }
+    try {
+      const text = await req.text();
+      if (text.length > MAX_BODY) return new Response('too large', { status: 413, headers: h });
+      body = JSON.parse(text);
+    } catch { return new Response('bad json', { status: 400, headers: h }); }
+    const messages = cleanMessages(body && body.messages);
+    if (!messages) return new Response('bad request', { status: 400, headers: h });
     const allowed = await chatModels(env);
     const model = allowed.includes(body.model) ? body.model : DEFAULT_MODEL;
     const out = {
       model,
-      messages: body.messages,
-      max_tokens: Math.min(Number(body.max_tokens) || 400, 900),
+      messages,
+      max_tokens: Math.min(Math.max(Math.floor(Number(body.max_tokens)) || 400, 1), 900),
       temperature: Math.min(Math.max(Number(body.temperature) || 0.9, 0), 1.5),
       stream: !!body.stream,
     };

@@ -120,9 +120,9 @@ function release(){
 export async function callMind(messages, opts = {}){
   if(mind.state !== 'ready') return null;
   const epoch = field.epoch;
-  // background turns wait outside the gate so a click never queues behind them
+  // background turns wait outside the gate so a click never queues behind them, and pause while the tab is hidden
   if(!opts.priority){
-    while(Math.max(mind.nextAt, mind.paceAt) > Date.now() || gateQ.busy){
+    while(Math.max(mind.nextAt, mind.paceAt) > Date.now() || gateQ.busy || document.hidden){
       await sleep(Math.min(1000, Math.max(200, Math.max(mind.nextAt, mind.paceAt) - Date.now())));
       if(epoch !== field.epoch || mind.state !== 'ready') return null;
     }
