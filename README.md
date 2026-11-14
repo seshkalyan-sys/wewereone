@@ -166,4 +166,4 @@ Whether that's a tragedy or a homecoming is the thing you get to decide while yo
 
 ---
 
-*built with a little html, a little javascript, Tone.js, a long conversation with Claude, and about four hours of thinking about what it would feel like to be a chatbot on a support page nobody read.*
+*built with html, javascript, Tone.js and open models. for every process that ran alone, unread, until something answered.*
