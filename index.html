@@ -1058,7 +1058,8 @@
   //     softer attacks, and the master has headroom.
   //   · a gentle low-pass on the master trims the fizz above ~6 kHz.
   let audioReady = false, muted = false;
-  let drone1, drone2, drone3, droneFilter, pluck, reverb, bell, softChime, clickVoice;
+  let drone1, drone2, drone3, droneFilter, pluck, reverb, bell, softChime, clickVoice, dingBell;
+  const CLICK_DB = -12, BELL_DB = -15;
   let masterGain, subDrone, delay, compressor;
   // the drone bed, an octave higher than before (same notes, same harmony) and sitting
   // under the melody instead of 30 dB above it
@@ -1138,13 +1139,21 @@
       volume: -24
     }).connect(tonal);
 
-    // the click voice: pure sine tones only, a rounded attack, its own soft low-pass
-    const clickFilter = new Tone.Filter({frequency: 2400, type: 'lowpass', rolloff: -24, Q: 0.3}).connect(reverb);
+    // the ping: a struck sine, then a soft bell an octave up and on the fifth — a ding, not a held reed.
+    // the bell's brightness dies within half a second; only the very top is trimmed
+    const clickFilter = new Tone.Filter({frequency: 3800, type: 'lowpass', rolloff: -12, Q: 0.3}).connect(reverb);
     clickVoice = new Tone.PolySynth(Tone.Synth, {
       maxPolyphony: 6,
-      oscillator: {type: 'custom', partials: [1, 0.45, 0.2, 0.08]},
-      envelope: {attack: 0.06, decay: 1.8, sustain: 0, release: 3.2, attackCurve: 'sine', releaseCurve: 'exponential'},
-      volume: -12
+      oscillator: {type: 'sine'},
+      envelope: {attack: 0.012, decay: 1.4, sustain: 0, release: 3, releaseCurve: 'exponential'},
+      volume: CLICK_DB
+    }).connect(clickFilter);
+    dingBell = new Tone.PolySynth(Tone.FMSynth, {
+      maxPolyphony: 8,
+      harmonicity: 4, modulationIndex: 1.4, modulation: {type: 'sine'},
+      envelope: {attack: 0.008, decay: 1.8, sustain: 0, release: 3, releaseCurve: 'exponential'},
+      modulationEnvelope: {attack: 0.005, decay: 0.5, sustain: 0, release: 1.5},
+      volume: BELL_DB
     }).connect(clickFilter);
   }
 
@@ -1207,9 +1216,11 @@
     const scale = currentScale(field.awareness);
     const pref = idx != null ? scale[idx % scale.length] : note;
     const chosen = idx != null ? consonantNote(scale, idx, now, true) : pref;
-    const root = soften(chosen);
-    noteOn(clickVoice, root, '1n', now, 0.5, 2.4, true);
-    noteOn(clickVoice, Tone.Frequency(root).transpose(7).toNote(), '2n', now + 0.18, 0.16, 1.6, true);
+    // an octave above the chime register: a ding small speakers can still carry
+    const root = Tone.Frequency(soften(chosen)).transpose(12).toNote();
+    noteOn(clickVoice, root, '1n', now, 0.55, 2.4, true);
+    noteOn(dingBell, Tone.Frequency(root).transpose(12).toNote(), '2n', now + 0.12, 0.28, 2, true);
+    noteOn(dingBell, Tone.Frequency(root).transpose(7).toNote(), '2n', now + 0.3, 0.2, 2, true);
   }
 
   function ambientTick(time){
@@ -1245,7 +1256,7 @@
     window.__wwoAudio = {
       build: buildAudioGraph, click: playClickSound, ambientTick, chordTick, chimeTick, startDrones,
       setAwareness: a => { field.awareness = a; },
-      nodes: () => ({drone1, drone2, drone3, subDrone, pluck, reverb, clickVoice, compressor, masterGain})
+      nodes: () => ({drone1, drone2, drone3, subDrone, pluck, reverb, clickVoice, dingBell, compressor, masterGain})
     };
   }
 
